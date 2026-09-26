@@ -1,11 +1,12 @@
-package org.uniquindio.proyectoavanzadacompuparts.aplication.valueObject;
+package org.uniquindio.proyectoavanzadacompuparts.domain.valueobject;
+
+import org.uniquindio.proyectoavanzadacompuparts.domain.exception.ReglaDominioException;
 
 import java.math.BigDecimal;
 import java.util.Objects;
 
 /**
- * Value Object que representa el precio de un Componente.
- * Es inmutable: cualquier cambio de precio implica crear una nueva instancia.
+ * Valor monetario inmutable del Componente; se usa para evitar inconsistencias en el precio.
  */
 public record Precio(BigDecimal monto, String moneda) {
 
@@ -13,7 +14,7 @@ public record Precio(BigDecimal monto, String moneda) {
         Objects.requireNonNull(monto, "El monto no puede ser nulo");
         Objects.requireNonNull(moneda, "La moneda no puede ser nula");
         if (monto.signum() < 0) {
-            throw new IllegalArgumentException("El monto no puede ser negativo");
+            throw new IllegalArgumentException("El monto del precio no puede ser negativo");
         }
         if (moneda.isBlank()) {
             throw new IllegalArgumentException("La moneda no puede estar vacía");
@@ -21,8 +22,8 @@ public record Precio(BigDecimal monto, String moneda) {
     }
 
     public Precio sumar(Precio otro) {
-        if (!this.moneda.equals(otro.moneda)) {
-            throw new IllegalArgumentException("No se pueden sumar precios en distinta moneda");
+        if (!this.moneda.equalsIgnoreCase(otro.moneda)) {
+            throw new ReglaDominioException("No se pueden sumar precios en distinta moneda");
         }
         return new Precio(this.monto.add(otro.monto), this.moneda);
     }
