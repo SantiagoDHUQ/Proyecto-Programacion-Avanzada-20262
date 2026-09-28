@@ -52,4 +52,16 @@ public class SolicitudRMA {
     public LocalDate getFechaSolicitud() {
         return fechaSolicitud;
     }
+
+    @Override
+    public boolean equals(Object o) {
+        if (this == o) return true;
+        if (!(o instanceof SolicitudRMA solicitudRMA)) return false;
+        return id.equals(solicitudRMA.id);
+    }
+
+    @Override
+    public int hashCode() {
+        return Objects.hash(id);
+    }
 }

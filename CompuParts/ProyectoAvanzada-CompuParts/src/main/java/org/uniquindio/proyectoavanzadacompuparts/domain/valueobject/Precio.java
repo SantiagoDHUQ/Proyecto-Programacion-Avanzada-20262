@@ -14,10 +14,10 @@ public record Precio(BigDecimal monto, String moneda) {
         Objects.requireNonNull(monto, "El monto no puede ser nulo");
         Objects.requireNonNull(moneda, "La moneda no puede ser nula");
         if (monto.signum() < 0) {
-            throw new IllegalArgumentException("El monto del precio no puede ser negativo");
+            throw new ReglaDominioException("El monto del precio no puede ser negativo");
         }
         if (moneda.isBlank()) {
-            throw new IllegalArgumentException("La moneda no puede estar vacía");
+            throw new ReglaDominioException("La moneda no puede estar vacía");
         }
     }
 
