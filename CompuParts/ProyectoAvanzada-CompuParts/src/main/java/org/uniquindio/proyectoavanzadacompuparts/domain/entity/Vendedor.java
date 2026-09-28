@@ -33,6 +33,18 @@ public class Vendedor {
         return new Vendedor(nombre, TipoVendedor.valueOf(tipo.toUpperCase()));
     }
 
+    public static Vendedor reconstituir(UUID id, String nombre, String tipo) {
+        Vendedor v = new Vendedor(nombre, TipoVendedor.valueOf(tipo.toUpperCase()));
+        try {
+            java.lang.reflect.Field field = Vendedor.class.getDeclaredField("id");
+            field.setAccessible(true);
+            field.set(v, id);
+        } catch (Exception e) {
+            throw new RuntimeException(e);
+        }
+        return v;
+    }
+
     public boolean esAutorizado() {
         return this.tipo == TipoVendedor.AUTORIZADO;
     }

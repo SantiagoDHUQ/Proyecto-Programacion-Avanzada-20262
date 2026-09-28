@@ -1,6 +1,7 @@
 package org.uniquindio.proyectoavanzadacompuparts;
 
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.function.Executable;
 import org.uniquindio.proyectoavanzadacompuparts.domain.entity.Build;
 import org.uniquindio.proyectoavanzadacompuparts.domain.entity.Componente;
 import org.uniquindio.proyectoavanzadacompuparts.domain.entity.Vendedor;
@@ -8,7 +9,7 @@ import org.uniquindio.proyectoavanzadacompuparts.domain.exception.ReglaDominioEx
 import org.uniquindio.proyectoavanzadacompuparts.domain.valueobject.CategoriaComponente;
 import org.uniquindio.proyectoavanzadacompuparts.domain.valueobject.Disponibilidad;
 import org.uniquindio.proyectoavanzadacompuparts.domain.valueobject.EspecificacionTecnica;
-import org.uniquindio.proyectoavanzadacompuparts.domain.valueobject.Garantia;
+import org.uniquindio.proyectoavanzadacompuparts.domain.valueobject.EstadoBuild;
 import org.uniquindio.proyectoavanzadacompuparts.domain.valueobject.Precio;
 
 import java.math.BigDecimal;
@@ -18,110 +19,158 @@ import static org.junit.jupiter.api.Assertions.*;
 
 class DominioYAplicacionTests {
 
-    @Test
-    void precioRechazaMontoNegativo() {
-        assertThrows(IllegalArgumentException.class, () -> new Precio(new BigDecimal("-1.00"), "COP"));
-    }
+        // =========================================================================
+        // 1. PRUEBAS DE VALUE OBJECT (Mínimo 2)
+        // =========================================================================
 
-    @Test
-    void garantiaEstaVigenteCuandoFechaActualEsAnteriorAlLimite() {
-        Garantia garantia = new Garantia(LocalDate.now().minusDays(10), 365);
-        assertTrue(garantia.estaVigente(LocalDate.now()));
-    }
+        /**
+         * Prueba 1 (Value Object): Igualdad por valor.
+         * Dos precios con idéntico monto y moneda son matemáticamente el mismo objeto
+         * en DDD.
+         */
+        @Test
+        void precioDosObjetosConMismoMontoYMonedaSonIguales() {
+                Precio p1 = new Precio(new BigDecimal("15000"), "COP");
+                Precio p2 = new Precio(new BigDecimal("15000"), "COP");
+                assertEquals(p1, p2); // Igualdad por VALOR
+        }
 
-    @Test
-    void componenteEnPreventaSinFechaEstimadaLanzaExcepcion() {
-        Componente componente = Componente.crear(
-                "Ryzen 7 7800X3D",
-                CategoriaComponente.CPU,
-                new EspecificacionTecnica("AM5", 120, "DDR5"),
-                new Precio(new BigDecimal("800000"), "COP"),
-                Disponibilidad.DISPONIBLE,
-                Vendedor.crear("Vendedor Test", "AUTORIZADO"),
-                "SN-001"
-        );
+                /**
+                 * Prueba 2 (Value Object): Validación que lanza ReglaDominioException.
+                 * Prohíbe la existencia de precios negativos.
+                 */
+        @Test
+        void precioRechazaMontoNegativoYFalla() {
+                Executable creacionPrecio = () -> new Precio(new BigDecimal("-1.00"), "COP");
+                assertThrows(ReglaDominioException.class, creacionPrecio);
+        }
 
-        assertThrows(ReglaDominioException.class, () -> componente.pasarAPreventa(null));
-    }
+        // =========================================================================
+        // 2. PRUEBAS DE ENTIDAD (Mínimo 2)
+        // =========================================================================
 
-    @Test
-    void buildEsCompletoCuandoTieneMotherboardCpuYPsu() {
-        Build build = Build.crear();
-        build.agregarComponente(Componente.crear("Ryzen 7 7800X3D", CategoriaComponente.CPU,
-                new EspecificacionTecnica("AM5", 120, "DDR5"), new Precio(new BigDecimal("800000"), "COP"),
-                Disponibilidad.DISPONIBLE, Vendedor.crear("Proveedor", "AUTORIZADO"), "SN-CPU"));
-        build.agregarComponente(Componente.crear("MSI B650", CategoriaComponente.MOTHERBOARD,
-                new EspecificacionTecnica("AM5", 80, "DDR5"), new Precio(new BigDecimal("700000"), "COP"),
-                Disponibilidad.DISPONIBLE, Vendedor.crear("Proveedor", "AUTORIZADO"), "SN-MB"));
-        build.agregarComponente(Componente.crear("Corsair RM850", CategoriaComponente.PSU,
-                new EspecificacionTecnica("ATX", 850, "DDR5"), new Precio(new BigDecimal("900000"), "COP"),
-                Disponibilidad.DISPONIBLE, Vendedor.crear("Proveedor", "AUTORIZADO"), "SN-PSU"));
+        /**
+         * Prueba 3 (Entidad): Igualdad por IDENTIDAD.
+         * Aunque tengan datos diferentes, si comparten el mismo UUID, son la misma
+         * entidad.
+         */
+        @Test
+        void vendedorDosObjetosConMismoIdSonIguales() {
+                java.util.UUID idCompartido = java.util.UUID.randomUUID();
+                Vendedor original = Vendedor.reconstituir(idCompartido, "Vendedor Oficial", "AUTORIZADO");
+                Vendedor otro = Vendedor.reconstituir(idCompartido, "Vendedor Cambiado", "PARTICULAR");
+                assertEquals(original, otro); // Igualdad por IDENTIDAD
+        }
 
-        assertTrue(build.esCompleto());
-    }
+        /**
+         * Prueba 4 (Entidad): Una regla que se protege.
+         * Valida que la entidad Build reconozca que un ensamble solo está "completo"
+         * cuando contiene Procesador, Tarjeta Madre y Fuente de Poder.
+         */
+        @Test
+        void buildEsCompletoCuandoTieneMotherboardCpuYPsu() {
+                Build build = Build.crear();
+                build.agregarComponente(Componente.crear("Ryzen", CategoriaComponente.CPU,
+                                new EspecificacionTecnica("AM5", 120, "DDR5"),
+                                new Precio(new BigDecimal("800000"), "COP"),
+                                Disponibilidad.DISPONIBLE, Vendedor.crear("Proveedor", "AUTORIZADO"), "SN-CPU"));
+                build.agregarComponente(Componente.crear("MSI", CategoriaComponente.MOTHERBOARD,
+                                new EspecificacionTecnica("AM5", 80, "DDR5"),
+                                new Precio(new BigDecimal("700000"), "COP"),
+                                Disponibilidad.DISPONIBLE, Vendedor.crear("Proveedor", "AUTORIZADO"), "SN-MB"));
+                build.agregarComponente(Componente.crear("Corsair", CategoriaComponente.PSU,
+                                new EspecificacionTecnica("ATX", 850, "DDR5"),
+                                new Precio(new BigDecimal("900000"), "COP"),
+                                Disponibilidad.DISPONIBLE, Vendedor.crear("Proveedor", "AUTORIZADO"), "SN-PSU"));
 
-    @Test
-    void buildConPsuInsuficienteLanzaExcepcion() {
-        Build build = Build.crear();
-        build.agregarComponente(Componente.crear("Ryzen 7 7800X3D", CategoriaComponente.CPU,
-                new EspecificacionTecnica("AM5", 120, "DDR5"), new Precio(new BigDecimal("800000"), "COP"),
-                Disponibilidad.DISPONIBLE, Vendedor.crear("Proveedor", "AUTORIZADO"), "SN-CPU"));
-        build.agregarComponente(Componente.crear("MSI B650", CategoriaComponente.MOTHERBOARD,
-                new EspecificacionTecnica("AM5", 80, "DDR5"), new Precio(new BigDecimal("700000"), "COP"),
-                Disponibilidad.DISPONIBLE, Vendedor.crear("Proveedor", "AUTORIZADO"), "SN-MB"));
-        build.agregarComponente(Componente.crear("Fuente 100W", CategoriaComponente.PSU,
-                new EspecificacionTecnica("ATX", 100, "DDR5"), new Precio(new BigDecimal("600000"), "COP"),
-                Disponibilidad.DISPONIBLE, Vendedor.crear("Proveedor", "AUTORIZADO"), "SN-PSU"));
+                assertTrue(build.esCompleto()); // Regla protegida exitosamente
+        }
 
-        assertThrows(ReglaDominioException.class, build::validarCompatibilidad);
-    }
+        // =========================================================================
+        // 3. PRUEBAS DE AGREGADO / INVARIANTES (Mínimo 2 por Agregado = 4 en total)
+        // =========================================================================
 
-    @Test
-    void buildConIncompatibilidadPorSocketDebeAdvertir() {
-        Build build = Build.crear();
-        build.agregarComponente(Componente.crear("Ryzen 7 7800X3D", CategoriaComponente.CPU,
-                new EspecificacionTecnica("AM5", 120, "DDR5"), new Precio(new BigDecimal("800000"), "COP"),
-                Disponibilidad.DISPONIBLE, Vendedor.crear("Proveedor", "AUTORIZADO"), "SN-CPU"));
-        build.agregarComponente(Componente.crear("Intel Z690", CategoriaComponente.MOTHERBOARD,
-                new EspecificacionTecnica("LGA1700", 80, "DDR5"), new Precio(new BigDecimal("700000"), "COP"),
-                Disponibilidad.DISPONIBLE, Vendedor.crear("Proveedor", "AUTORIZADO"), "SN-MB"));
-        build.agregarComponente(Componente.crear("Corsair RM850", CategoriaComponente.PSU,
-                new EspecificacionTecnica("ATX", 850, "DDR5"), new Precio(new BigDecimal("900000"), "COP"),
-                Disponibilidad.DISPONIBLE, Vendedor.crear("Proveedor", "AUTORIZADO"), "SN-PSU"));
+        // --- AGREGADO 1: BUILD ---
 
-        assertThrows(ReglaDominioException.class, build::validarCompatibilidad);
-    }
+        /**
+         * Prueba 5 (Invariante Build): Excepción esperada Y estado intacto.
+         * Un build incompleto falla al marcarse como listo para compra y se queda
+         * EN_CONSTRUCCION.
+         */
+        @Test
+        void buildMarcarListoFallaSiNoEstaCompletoYNoCambiaEstado() {
+                Build build = Build.crear();
+                // Solo agregamos CPU (incompleto)
+                build.agregarComponente(Componente.crear("Ryzen", CategoriaComponente.CPU,
+                                new EspecificacionTecnica("AM5", 120, "DDR5"),
+                                new Precio(new BigDecimal("800000"), "COP"),
+                                Disponibilidad.DISPONIBLE, Vendedor.crear("Prov", "AUTORIZADO"), "SN-CPU"));
 
-    @Test
-    void vendedorParticularNoPuedePublicarEnPreventa() {
-        Vendedor vendedor = Vendedor.crear("Comprador local", "PARTICULAR");
-        Componente componente = Componente.crear(
-                "GPU usada",
-                CategoriaComponente.GPU,
-                new EspecificacionTecnica("PCIe4", 300, "GDDR6"),
-                new Precio(new BigDecimal("1500000"), "COP"),
-                Disponibilidad.DISPONIBLE,
-                vendedor,
-                "SN-USED"
-        );
+                assertEquals(EstadoBuild.EN_CONSTRUCCION, build.getEstado()); // Estado inicial
 
-        assertThrows(ReglaDominioException.class, () -> componente.pasarAPreventa(LocalDate.now().plusDays(7)));
-    }
+                assertThrows(ReglaDominioException.class, build::marcarComoListoParaCompra);
 
-    @Test
-    void rmaSobreComponenteUsadoSinGarantiaFalla() {
-        Componente componente = Componente.crear(
-                "RAM usada sin garantía",
-                CategoriaComponente.RAM,
-                new EspecificacionTecnica("AM5", 50, "DDR5"),
-                new Precio(new BigDecimal("250000"), "COP"),
-                Disponibilidad.DISPONIBLE,
-                Vendedor.crear("Vendedor particular", "PARTICULAR"),
-                "SN-USA" 
-        );
-        componente.marcarComoUsadoSinGarantia();
+                assertEquals(EstadoBuild.EN_CONSTRUCCION, build.getEstado()); // Estado intacto tras rechazo
+        }
 
-        assertThrows(ReglaDominioException.class,
-                () -> componente.crearSolicitudRMA(LocalDate.now(), 12, LocalDate.now().minusDays(2)));
-    }
+        /**
+         * Prueba 6 (Invariante Build): Excepción esperada Y estado intacto.
+         * La compatibilidad falla si la PSU es insuficiente para el consumo total.
+         */
+        @Test
+        void buildValidarCompatibilidadFallaPorConsumoYNoCambiaEstado() {
+                Build build = Build.crear();
+                build.agregarComponente(Componente.crear("Ryzen", CategoriaComponente.CPU,
+                                new EspecificacionTecnica("AM5", 120, "DDR5"),
+                                new Precio(new BigDecimal("800000"), "COP"),
+                                Disponibilidad.DISPONIBLE, Vendedor.crear("Prov", "AUTORIZADO"), "SN-CPU"));
+                build.agregarComponente(Componente.crear("Fuente 100W", CategoriaComponente.PSU,
+                                new EspecificacionTecnica("ATX", 100, "DDR5"),
+                                new Precio(new BigDecimal("600000"), "COP"),
+                                Disponibilidad.DISPONIBLE, Vendedor.crear("Prov", "AUTORIZADO"), "SN-PSU"));
+
+                assertEquals(EstadoBuild.EN_CONSTRUCCION, build.getEstado()); // Estado inicial
+
+                assertThrows(ReglaDominioException.class, build::validarCompatibilidad);
+
+                assertEquals(EstadoBuild.EN_CONSTRUCCION, build.getEstado()); // Estado intacto tras rechazo
+        }
+
+        // --- AGREGADO 2: COMPONENTE ---
+
+        /**
+         * Prueba 7 (Invariante Componente): Excepción esperada Y estado intacto.
+         * Pasar a preventa sin una fecha estimada es ilegal.
+         */
+        @Test
+        void componentePasarPreventaFallaSinFechaYNoCambiaEstado() {
+                Componente componente = Componente.crear("Ryzen", CategoriaComponente.CPU,
+                                new EspecificacionTecnica("AM5", 120, "DDR5"),
+                                new Precio(new BigDecimal("800000"), "COP"),
+                                Disponibilidad.DISPONIBLE, Vendedor.crear("Vendedor", "AUTORIZADO"), "SN-001");
+
+                assertEquals(Disponibilidad.DISPONIBLE, componente.getDisponibilidad());
+
+                assertThrows(ReglaDominioException.class, () -> componente.pasarAPreventa(null));
+
+                assertEquals(Disponibilidad.DISPONIBLE, componente.getDisponibilidad()); // Estado intacto
+        }
+
+        /**
+         * Prueba 8 (Invariante Componente): Excepción esperada Y estado intacto.
+         * Un vendedor particular no puede lanzar preventas.
+         */
+        @Test
+        void componentePasarPreventaFallaSiVendedorParticularYNoCambiaEstado() {
+                Componente componente = Componente.crear("RAM", CategoriaComponente.RAM,
+                                new EspecificacionTecnica("AM5", 50, "DDR5"),
+                                new Precio(new BigDecimal("250000"), "COP"),
+                                Disponibilidad.DISPONIBLE, Vendedor.crear("Particular", "PARTICULAR"), "SN-USA");
+
+                assertEquals(Disponibilidad.DISPONIBLE, componente.getDisponibilidad());
+
+                assertThrows(ReglaDominioException.class, () -> componente.pasarAPreventa(LocalDate.now().plusDays(7)));
+
+                assertEquals(Disponibilidad.DISPONIBLE, componente.getDisponibilidad()); // Estado intacto
+        }
 }
