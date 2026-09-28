@@ -50,7 +50,6 @@ public class Build {
      */
     public void validarCompatibilidad() {
         if (componentes.isEmpty()) {
-            this.estado = EstadoBuild.INCOMPATIBLE;
             throw new ReglaDominioException("El Build no puede validarse sin componentes");
         }
 
@@ -66,9 +65,11 @@ public class Build {
                 .orElseThrow(() -> new ReglaDominioException("El Build necesita una PSU para validarse"));
 
         if (wattajePsu < consumoTotal) {
-            this.estado = EstadoBuild.INCOMPATIBLE;
             throw new ReglaDominioException(
-                    "La PSU del Build tiene un wattaje insuficiente: " + wattajePsu + "W para un consumo de " + consumoTotal + "W");
+                    "La PSU del Build tiene un wattaje insuficiente: "
+                            + wattajePsu + "W para un consumo de "
+                            + consumoTotal + "W"
+            );
         }
 
         boolean incompatibilidadSocket = componentes.stream()
@@ -79,7 +80,6 @@ public class Build {
                 .count() > 1;
 
         if (incompatibilidadSocket) {
-            this.estado = EstadoBuild.INCOMPATIBLE;
             throw new ReglaDominioException("El Build tiene incompatibilidades sin resolver antes de comprar");
         }
 
@@ -90,11 +90,7 @@ public class Build {
         if (!esCompleto()) {
             throw new ReglaDominioException("El Build debe tener al menos CPU, Motherboard y PSU para poder comprarse");
         }
-        try {
-            validarCompatibilidad();
-        } catch (ReglaDominioException e) {
-            throw e;
-        }
+        validarCompatibilidad();
         this.estado = EstadoBuild.LISTO_PARA_COMPRA;
     }
 

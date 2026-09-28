@@ -30,10 +30,10 @@ public class Componente {
     private LocalDate fechaEstimadaLlegada;
     private boolean usadoSinGarantia;
 
-    private Componente(String nombre, CategoriaComponente categoria, EspecificacionTecnica especificacion,
+    private Componente(UUID id, String nombre, CategoriaComponente categoria, EspecificacionTecnica especificacion,
                        Precio precio, Disponibilidad disponibilidad, Vendedor vendedor, String numeroSerie,
                        LocalDate fechaCompra, boolean nuevo) {
-        this.id = UUID.randomUUID();
+        this.id = Objects.requireNonNull(id);
         this.nombre = Objects.requireNonNull(nombre, "El nombre no puede ser nulo");
         this.categoria = Objects.requireNonNull(categoria, "La categoría no puede ser nula");
         this.especificacion = Objects.requireNonNull(especificacion, "La especificación no puede ser nula");
@@ -54,13 +54,13 @@ public class Componente {
 
     public static Componente crear(String nombre, CategoriaComponente categoria, EspecificacionTecnica especificacion,
                                    Precio precio, Disponibilidad disponibilidad, Vendedor vendedor, String numeroSerie) {
-        return new Componente(nombre, categoria, especificacion, precio, disponibilidad, vendedor, numeroSerie, LocalDate.now(), true);
+        return new Componente(UUID.randomUUID(), nombre, categoria, especificacion, precio, disponibilidad, vendedor, numeroSerie, LocalDate.now(), true);
     }
 
     public static Componente crear(String nombre, CategoriaComponente categoria, EspecificacionTecnica especificacion,
                                    Precio precio, Disponibilidad disponibilidad, Vendedor vendedor, String numeroSerie,
                                    LocalDate fechaCompra, boolean nuevo) {
-        return new Componente(nombre, categoria, especificacion, precio, disponibilidad, vendedor, numeroSerie, fechaCompra, nuevo);
+        return new Componente(UUID.randomUUID(), nombre, categoria, especificacion, precio, disponibilidad, vendedor, numeroSerie, fechaCompra, nuevo);
     }
 
     /**
