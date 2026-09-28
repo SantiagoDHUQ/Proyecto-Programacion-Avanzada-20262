@@ -65,6 +65,7 @@ public class Build {
                 .orElseThrow(() -> new ReglaDominioException("El Build necesita una PSU para validarse"));
 
         if (wattajePsu < consumoTotal) {
+            this.estado = EstadoBuild.INCOMPATIBLE;
             throw new ReglaDominioException(
                     "La PSU del Build tiene un wattaje insuficiente: " + wattajePsu + "W para un consumo de " + consumoTotal + "W");
         }
@@ -77,6 +78,7 @@ public class Build {
                 .count() > 1;
 
         if (incompatibilidadSocket) {
+            this.estado = EstadoBuild.INCOMPATIBLE;
             throw new ReglaDominioException("El Build tiene incompatibilidades sin resolver antes de comprar");
         }
 
