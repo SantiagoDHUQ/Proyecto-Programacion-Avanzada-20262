@@ -2,10 +2,11 @@ package org.uniquindio.proyectoavanzadacompuparts.domain.entity;
 
 import org.junit.jupiter.api.Test;
 import org.uniquindio.proyectoavanzadacompuparts.domain.exception.ReglaDominioException;
-import org.uniquindio.proyectoavanzadacompuparts.domain.valueobject.EstadoBuild;
+import org.uniquindio.proyectoavanzadacompuparts.domain.valueobject.*;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertThrows;
+import java.math.BigDecimal;
+
+import static org.junit.jupiter.api.Assertions.*;
 
 public class BuildTest {
     @Test
@@ -34,5 +35,19 @@ public class BuildTest {
 
         // Assert
         assertEquals(estadoAnterior, build.getEstado());
+    }
+
+    @Test
+    void buildIncompleto() {
+        //Arrange
+        EspecificacionTecnica espTec = new EspecificacionTecnica("AMR5", 0, "DDR5");
+        Precio base = new Precio(new BigDecimal(1000), "USD");
+        Vendedor ven = Vendedor.crear("Juan", "Autorizado");
+        Componente comp = Componente.crear("R", CategoriaComponente.CPU, espTec, base, Disponibilidad.DISPONIBLE, ven, "123");
+        Build build = Build.crear();
+        build.agregarComponente(comp);
+
+        //Act & Assert
+        assertFalse(build.esCompleto());
     }
 }

@@ -1,8 +1,5 @@
 .idea/
-CompuParts/ProyectoAvanzada-CompuParts/.gradle/9.7.1/checksums/md5-checksums.bin
-CompuParts/ProyectoAvanzada-CompuParts/.gradle/9.7.1/checksums/sha1-checksums.bin
-/CompuParts/ProyectoAvanzada-CompuParts/.gradle
-/CompuParts/ProyectoAvanzada-CompuParts/.gradle
-/CompuParts/ProyectoAvanzada-CompuParts/.gradle
-CompuParts/ProyectoAvanzada-CompuParts/.gradle/buildOutputCleanup/cache.properties
-CompuParts/ProyectoAvanzada-CompuParts/.gradle/vcs-1/gc.properties
+CompuParts/.DS_Store
+.DS_Store
+build/
+.gradle/
