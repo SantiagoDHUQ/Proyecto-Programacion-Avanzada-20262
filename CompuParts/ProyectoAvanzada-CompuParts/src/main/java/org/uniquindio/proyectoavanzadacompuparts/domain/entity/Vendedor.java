@@ -44,7 +44,7 @@ public class Vendedor {
         }
         return v;
     }
-
+    
     public boolean esAutorizado() {
         return this.tipo == TipoVendedor.AUTORIZADO;
     }
