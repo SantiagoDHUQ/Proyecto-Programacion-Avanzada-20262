@@ -7,7 +7,9 @@ import org.springframework.boot.autoconfigure.SpringBootApplication;
 public class ProyectoAvanzadaCompuPartsApplication {
 
     public static void main(String[] args) {
+        System.out.println("Bienvenido al sistema de gestión de CompuParts");
         SpringApplication.run(ProyectoAvanzadaCompuPartsApplication.class, args);
+        
     }
 
 }
