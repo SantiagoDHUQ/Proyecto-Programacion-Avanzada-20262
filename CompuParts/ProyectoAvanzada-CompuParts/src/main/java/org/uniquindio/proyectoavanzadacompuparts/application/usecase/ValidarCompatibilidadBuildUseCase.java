@@ -1,4 +1,4 @@
-package org.uniquindio.proyectoavanzadacompuparts.aplication.usecase;
+package org.uniquindio.proyectoavanzadacompuparts.application.usecase;
 
 import org.uniquindio.proyectoavanzadacompuparts.aplication.dto.response.BuildResponseDTO;
 import org.uniquindio.proyectoavanzadacompuparts.domain.entity.Build;

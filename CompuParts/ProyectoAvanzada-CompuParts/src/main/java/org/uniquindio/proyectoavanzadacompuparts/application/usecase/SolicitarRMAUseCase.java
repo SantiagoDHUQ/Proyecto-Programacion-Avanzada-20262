@@ -1,6 +1,7 @@
-package org.uniquindio.proyectoavanzadacompuparts.aplication.usecase;
+package org.uniquindio.proyectoavanzadacompuparts.application.usecase;
 
 import org.uniquindio.proyectoavanzadacompuparts.domain.entity.Componente;
+import org.uniquindio.proyectoavanzadacompuparts.domain.entity.SolicitudRMA;
 import org.uniquindio.proyectoavanzadacompuparts.domain.exception.ReglaDominioException;
 import org.uniquindio.proyectoavanzadacompuparts.domain.repository.ComponenteRepository;
 
@@ -9,21 +10,20 @@ import java.util.Objects;
 import java.util.UUID;
 
 /**
- * Caso de uso que crea una reserva del componente en modalidad Preventa.
- * Requiere ComponenteRepository para localizar la pieza y validar la regla del negocio.
+ * Caso de uso que solicita una RMA para un Componente dentro de garantía.
+ * Requiere ComponenteRepository para validar la entidad referenciada.
  */
-public class CrearReservaPreventaUseCase {
+public class SolicitarRMAUseCase {
 
     private final ComponenteRepository componenteRepository;
 
-    public CrearReservaPreventaUseCase(ComponenteRepository componenteRepository) {
+    public SolicitarRMAUseCase(ComponenteRepository componenteRepository) {
         this.componenteRepository = Objects.requireNonNull(componenteRepository, "El repositorio de componentes no puede ser nulo");
     }
 
-    public Componente ejecutar(UUID componenteId, LocalDate fechaEstimadaLlegada) {
+    public SolicitudRMA ejecutar(UUID componenteId, String numeroSerie) {
         Componente componente = componenteRepository.buscarPorId(componenteId)
                 .orElseThrow(() -> new ReglaDominioException("No existe un Componente con ese identificador"));
-        componente.pasarAPreventa(fechaEstimadaLlegada);
-        return componenteRepository.guardar(componente);
+        return SolicitudRMA.crear(componente, numeroSerie, LocalDate.now());
     }
 }
