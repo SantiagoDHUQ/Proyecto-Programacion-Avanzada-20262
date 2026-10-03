@@ -7,7 +7,7 @@ import java.util.UUID;
 
 /**
  * Entidad que representa al vendedor del Componente.
- * El tipo determina si el vendedor puede publicar en Preventa o manejar RMA.
+ * El tipo determina si el vendedor puede publicar en Preventa y manejar RMA.
  */
 public class Vendedor {
 
@@ -16,12 +16,12 @@ public class Vendedor {
         PARTICULAR
     }
 
-    private final UUID id;
+    private final String id;
     private final String nombre;
     private final TipoVendedor tipo;
 
-    private Vendedor(String nombre, TipoVendedor tipo) {
-        this.id = UUID.randomUUID();
+    private Vendedor(String id, String nombre, TipoVendedor tipo) {
+        this.id = Objects.requireNonNull(id, "El identificador del vendedor no puede ser nulo");
         this.nombre = Objects.requireNonNull(nombre, "El nombre del vendedor no puede ser nulo");
         this.tipo = Objects.requireNonNull(tipo, "El tipo del vendedor no puede ser nulo");
         if (nombre.isBlank()) {
@@ -29,8 +29,8 @@ public class Vendedor {
         }
     }
 
-    public static Vendedor crear(String nombre, String tipo) {
-        return new Vendedor(nombre, TipoVendedor.valueOf(tipo.toUpperCase()));
+    public static Vendedor crear(String id, String nombre, String tipo) {
+        return new Vendedor(id, nombre, TipoVendedor.valueOf(tipo.toUpperCase()));
     }
 
     public boolean esAutorizado() {
@@ -41,7 +41,7 @@ public class Vendedor {
         return this.tipo == TipoVendedor.PARTICULAR;
     }
 
-    public UUID getId() {
+    public String getId() {
         return id;
     }
 

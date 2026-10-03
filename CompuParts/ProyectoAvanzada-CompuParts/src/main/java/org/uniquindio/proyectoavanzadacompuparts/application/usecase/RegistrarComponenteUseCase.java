@@ -24,7 +24,7 @@ public class RegistrarComponenteUseCase {
     }
 
     public Componente ejecutar(RegistrarComponenteRequestDTO request) {
-        Vendedor vendedor = Vendedor.crear("Vendedor", request.vendedorTipo());
+        Vendedor vendedor = Vendedor.crear("1","Vendedor", request.vendedorTipo());
         Componente componente = Componente.crear(
                 request.nombre(),
                 CategoriaComponente.valueOf(request.categoria()),

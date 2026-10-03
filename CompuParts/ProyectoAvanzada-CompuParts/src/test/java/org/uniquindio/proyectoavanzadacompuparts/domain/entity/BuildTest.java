@@ -11,7 +11,7 @@ public class BuildTest {
     @Test
     void buildIncompletoNoDebeMarcarseListoParaCompra() {
         // Arrange
-        Build build = Build.crear();
+        Build build = Build.crear("1");
 
         // Act & Assert
         assertThrows(
@@ -23,7 +23,7 @@ public class BuildTest {
     @Test
     void buildIncompletoDebeConservarSuEstadoTrasElRechazo() {
         // Arrange
-        Build build = Build.crear();
+        Build build = Build.crear("1");
         EstadoBuild estadoAnterior = build.getEstado();
 
         // Act

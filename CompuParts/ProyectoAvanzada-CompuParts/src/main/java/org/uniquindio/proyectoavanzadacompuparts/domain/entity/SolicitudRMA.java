@@ -11,13 +11,13 @@ import java.util.UUID;
  */
 public class SolicitudRMA {
 
-    private final UUID id;
+    private final String id;
     private final Componente componente;
     private final String numeroSerie;
     private final LocalDate fechaSolicitud;
 
-    private SolicitudRMA(Componente componente, String numeroSerie, LocalDate fechaSolicitud) {
-        this.id = UUID.randomUUID();
+    private SolicitudRMA(String id, Componente componente, String numeroSerie, LocalDate fechaSolicitud) {
+        this.id = Objects.requireNonNull(id, "El identificador no puede ser nulo");
         this.componente = Objects.requireNonNull(componente, "El componente no puede ser nulo");
         this.numeroSerie = Objects.requireNonNull(numeroSerie, "El número de serie no puede ser nulo");
         this.fechaSolicitud = Objects.requireNonNull(fechaSolicitud, "La fecha de solicitud no puede ser nula");
@@ -29,15 +29,14 @@ public class SolicitudRMA {
         }
     }
 
-    public static SolicitudRMA crear(Componente componente, String numeroSerie, LocalDate fechaSolicitud) {
-        LocalDate fechaActual = LocalDate.now();
-        if (!componente.getGarantia().estaVigente(fechaActual)) {
+    public static SolicitudRMA crear(String id, Componente componente, String numeroSerie, LocalDate fechaSolicitud) {
+        if (!componente.getGarantia().estaVigente(fechaSolicitud)) {
             throw new ReglaDominioException("La SolicitudRMA solo puede crearse antes del vencimiento de la garantía");
         }
-        return new SolicitudRMA(componente, numeroSerie, fechaSolicitud);
+        return new SolicitudRMA(id, componente, numeroSerie, fechaSolicitud);
     }
 
-    public UUID getId() {
+    public String getId() {
         return id;
     }
 
@@ -52,4 +51,14 @@ public class SolicitudRMA {
     public LocalDate getFechaSolicitud() {
         return fechaSolicitud;
     }
+
+    @Override
+    public boolean equals(Object o){
+        if(this == o) return true;
+        if(!(o instanceof SolicitudRMA solicitudRMA)) return false;
+        return id. equals(solicitudRMA.id);
+    }
+
+    @Override
+    public int hashCode(){return Objects.hash(id);}
 }

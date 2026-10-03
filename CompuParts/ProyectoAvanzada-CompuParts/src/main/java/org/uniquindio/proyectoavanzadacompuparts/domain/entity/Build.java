@@ -1,5 +1,6 @@
 package org.uniquindio.proyectoavanzadacompuparts.domain.entity;
 
+import lombok.Getter;
 import org.uniquindio.proyectoavanzadacompuparts.domain.exception.ReglaDominioException;
 import org.uniquindio.proyectoavanzadacompuparts.domain.valueobject.CategoriaComponente;
 import org.uniquindio.proyectoavanzadacompuparts.domain.valueobject.EstadoBuild;
@@ -16,18 +17,20 @@ import java.util.UUID;
  */
 public class Build {
 
-    private final UUID id;
+    @Getter
+    private final String id;
     private final List<Componente> componentes;
+    @Getter
     private EstadoBuild estado;
 
-    private Build() {
-        this.id = UUID.randomUUID();
+    private Build(String id) {
+        this.id = Objects.requireNonNull(id, "El identificador no puede ser nulo");
         this.componentes = new ArrayList<>();
         this.estado = EstadoBuild.EN_CONSTRUCCION;
     }
 
-    public static Build crear() {
-        return new Build();
+    public static Build crear(String id) {
+        return new Build(id);
     }
 
     /**
@@ -94,16 +97,8 @@ public class Build {
         this.estado = EstadoBuild.LISTO_PARA_COMPRA;
     }
 
-    public UUID getId() {
-        return id;
-    }
-
     public List<Componente> getComponentes() {
         return Collections.unmodifiableList(componentes);
-    }
-
-    public EstadoBuild getEstado() {
-        return estado;
     }
 
     @Override

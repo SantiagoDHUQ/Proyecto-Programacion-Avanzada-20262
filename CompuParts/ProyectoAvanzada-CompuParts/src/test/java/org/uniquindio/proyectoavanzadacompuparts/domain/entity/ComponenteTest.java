@@ -15,7 +15,7 @@ public class ComponenteTest {
     @Test
     void componenteNoDebePasarAPreventaSinFechaEstimada() {
         // Arrange
-        Vendedor vendedor = Vendedor.crear(
+        Vendedor vendedor = Vendedor.crear("1",
                 "Distribuidor Oficial",
                 "AUTORIZADO"
         );

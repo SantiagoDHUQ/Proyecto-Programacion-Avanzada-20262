@@ -9,6 +9,7 @@ import org.uniquindio.proyectoavanzadacompuparts.domain.valueobject.Precio;
 import java.math.BigDecimal;
 import java.time.LocalDate;
 
+import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotEquals;
 
 public class SolicitudRMATest {
@@ -16,6 +17,7 @@ public class SolicitudRMATest {
     void dosSolicitudesRMAConMismoComponentesNoSonIguales(){
         //Arrange
         Vendedor vendedor = Vendedor.crear(
+                "1",
                 "Distribuidor Oficial",
                 "AUTORIZADO"
         );

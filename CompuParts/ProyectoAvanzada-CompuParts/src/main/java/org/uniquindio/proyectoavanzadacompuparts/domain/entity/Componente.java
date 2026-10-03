@@ -16,7 +16,7 @@ import java.util.UUID;
  */
 public class Componente {
 
-    private final UUID id;
+    private final String id;
     private final String nombre;
     private final CategoriaComponente categoria;
     private final EspecificacionTecnica especificacion;
@@ -30,10 +30,10 @@ public class Componente {
     private LocalDate fechaEstimadaLlegada;
     private boolean usadoSinGarantia;
 
-    private Componente(UUID id, String nombre, CategoriaComponente categoria, EspecificacionTecnica especificacion,
+    private Componente(String id, String nombre, CategoriaComponente categoria, EspecificacionTecnica especificacion,
                        Precio precio, Disponibilidad disponibilidad, Vendedor vendedor, String numeroSerie,
                        LocalDate fechaCompra, boolean nuevo) {
-        this.id = Objects.requireNonNull(id);
+        this.id = Objects.requireNonNull(id, "El identificador no puede ser nulo");
         this.nombre = Objects.requireNonNull(nombre, "El nombre no puede ser nulo");
         this.categoria = Objects.requireNonNull(categoria, "La categoría no puede ser nula");
         this.especificacion = Objects.requireNonNull(especificacion, "La especificación no puede ser nula");
@@ -52,15 +52,15 @@ public class Componente {
         }
     }
 
-    public static Componente crear(String nombre, CategoriaComponente categoria, EspecificacionTecnica especificacion,
+    public static Componente crear(String id,String nombre, CategoriaComponente categoria, EspecificacionTecnica especificacion,
                                    Precio precio, Disponibilidad disponibilidad, Vendedor vendedor, String numeroSerie) {
-        return new Componente(UUID.randomUUID(), nombre, categoria, especificacion, precio, disponibilidad, vendedor, numeroSerie, LocalDate.now(), true);
+        return new Componente(id, nombre, categoria, especificacion, precio, disponibilidad, vendedor, numeroSerie, LocalDate.now(), true);
     }
 
-    public static Componente crear(String nombre, CategoriaComponente categoria, EspecificacionTecnica especificacion,
+    public static Componente crear(String id, String nombre, CategoriaComponente categoria, EspecificacionTecnica especificacion,
                                    Precio precio, Disponibilidad disponibilidad, Vendedor vendedor, String numeroSerie,
                                    LocalDate fechaCompra, boolean nuevo) {
-        return new Componente(UUID.randomUUID(), nombre, categoria, especificacion, precio, disponibilidad, vendedor, numeroSerie, fechaCompra, nuevo);
+        return new Componente(id, nombre, categoria, especificacion, precio, disponibilidad, vendedor, numeroSerie, fechaCompra, nuevo);
     }
 
     /**
@@ -101,7 +101,7 @@ public class Componente {
         return disponibilidad != Disponibilidad.AGOTADO;
     }
 
-    public UUID getId() {
+    public String getId() {
         return id;
     }
 
