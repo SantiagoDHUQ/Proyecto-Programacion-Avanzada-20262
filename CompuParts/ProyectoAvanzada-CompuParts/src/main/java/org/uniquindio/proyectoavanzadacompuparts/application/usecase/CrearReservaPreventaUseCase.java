@@ -20,7 +20,7 @@ public class CrearReservaPreventaUseCase {
         this.componenteRepository = Objects.requireNonNull(componenteRepository, "El repositorio de componentes no puede ser nulo");
     }
 
-    public Componente ejecutar(UUID componenteId, LocalDate fechaEstimadaLlegada) {
+    public Componente ejecutar(String componenteId, LocalDate fechaEstimadaLlegada) {
         Componente componente = componenteRepository.buscarPorId(componenteId)
                 .orElseThrow(() -> new ReglaDominioException("No existe un Componente con ese identificador"));
         componente.pasarAPreventa(fechaEstimadaLlegada);

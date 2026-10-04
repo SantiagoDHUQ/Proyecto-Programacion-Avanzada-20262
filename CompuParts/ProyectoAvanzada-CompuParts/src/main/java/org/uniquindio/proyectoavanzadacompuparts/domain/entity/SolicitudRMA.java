@@ -4,7 +4,6 @@ import org.uniquindio.proyectoavanzadacompuparts.domain.exception.ReglaDominioEx
 
 import java.time.LocalDate;
 import java.util.Objects;
-import java.util.UUID;
 
 /**
  * Solicitud de garantía asociada a un Componente con falla de fábrica y en vigencia.
@@ -29,11 +28,18 @@ public class SolicitudRMA {
         }
     }
 
-    public static SolicitudRMA crear(String id, Componente componente, String numeroSerie, LocalDate fechaSolicitud) {
-        if (!componente.getGarantia().estaVigente(fechaSolicitud)) {
+    public static SolicitudRMA crear(String id, Componente componente, String numeroSerie, LocalDate fechaSolicitud, Vendedor vendedor) {
+        if (!componente.getGarantia().estaVigente(fechaSolicitud) && vendedorAutorizado(vendedor)) {
             throw new ReglaDominioException("La SolicitudRMA solo puede crearse antes del vencimiento de la garantía");
         }
         return new SolicitudRMA(id, componente, numeroSerie, fechaSolicitud);
+    }
+
+    public static boolean vendedorAutorizado(Vendedor vendedor){
+        if(!vendedor.esAutorizado()){
+            throw new ReglaDominioException("El vendedor no está autorizado");
+        }
+        return true;
     }
 
     public String getId() {

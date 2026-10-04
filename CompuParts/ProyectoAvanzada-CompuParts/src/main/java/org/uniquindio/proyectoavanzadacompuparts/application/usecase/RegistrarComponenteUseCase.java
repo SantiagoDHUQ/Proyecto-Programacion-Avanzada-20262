@@ -1,6 +1,6 @@
 package org.uniquindio.proyectoavanzadacompuparts.application.usecase;
 
-import org.uniquindio.proyectoavanzadacompuparts.aplication.dto.request.RegistrarComponenteRequestDTO;
+import org.uniquindio.proyectoavanzadacompuparts.application.dto.request.RegistrarComponenteRequestDTO;
 import org.uniquindio.proyectoavanzadacompuparts.domain.entity.Componente;
 import org.uniquindio.proyectoavanzadacompuparts.domain.entity.Vendedor;
 import org.uniquindio.proyectoavanzadacompuparts.domain.repository.ComponenteRepository;
@@ -26,6 +26,7 @@ public class RegistrarComponenteUseCase {
     public Componente ejecutar(RegistrarComponenteRequestDTO request) {
         Vendedor vendedor = Vendedor.crear("1","Vendedor", request.vendedorTipo());
         Componente componente = Componente.crear(
+                request.id(),
                 request.nombre(),
                 CategoriaComponente.valueOf(request.categoria()),
                 new EspecificacionTecnica(request.socket(), request.wattajeRequerido(), request.tipoMemoria()),

@@ -1,6 +1,6 @@
 package org.uniquindio.proyectoavanzadacompuparts.application.usecase;
 
-import org.uniquindio.proyectoavanzadacompuparts.aplication.dto.request.AgregarComponenteABuildRequestDTO;
+import org.uniquindio.proyectoavanzadacompuparts.application.dto.request.AgregarComponenteABuildRequestDTO;
 import org.uniquindio.proyectoavanzadacompuparts.domain.entity.Build;
 import org.uniquindio.proyectoavanzadacompuparts.domain.entity.Componente;
 import org.uniquindio.proyectoavanzadacompuparts.domain.exception.ReglaDominioException;

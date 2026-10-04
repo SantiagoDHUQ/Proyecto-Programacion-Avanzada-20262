@@ -10,7 +10,7 @@ import java.util.*;
  */
 public class BuildRepositoryEnMemoria implements BuildRepository {
 
-    private final Map<UUID, Build> almacenamiento = new HashMap<>();
+    private final Map<String, Build> almacenamiento = new HashMap<>();
 
     @Override
     public Build guardar(Build build) {
@@ -29,7 +29,7 @@ public class BuildRepositoryEnMemoria implements BuildRepository {
     }
 
     @Override
-    public void eliminar(UUID id) {
+    public void eliminar(String id) {
         almacenamiento.remove(id);
     }
 }

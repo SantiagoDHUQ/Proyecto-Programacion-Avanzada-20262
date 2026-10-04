@@ -88,15 +88,6 @@ public class Componente {
         this.usadoSinGarantia = true;
     }
 
-    public void crearSolicitudRMA(LocalDate fechaCompraSolicitud, int duracionGarantia, LocalDate fechaActual) {
-        if (usadoSinGarantia) {
-            throw new ReglaDominioException("Un componente usado sin garantía nunca puede tener una SolicitudRMA");
-        }
-        if (!new Garantia(fechaCompraSolicitud, duracionGarantia).estaVigente(fechaActual)) {
-            throw new ReglaDominioException("La garantía ya expiró; no se puede crear una SolicitudRMA");
-        }
-    }
-
     public boolean esActivoEnBuild() {
         return disponibilidad != Disponibilidad.AGOTADO;
     }

@@ -10,7 +10,7 @@ import java.util.*;
  */
 public class ComponenteRepositoryEnMemoria implements ComponenteRepository {
 
-    private final Map<UUID, Componente> almacenamiento = new HashMap<>();
+    private final Map<String, Componente> almacenamiento = new HashMap<>();
 
     @Override
     public Componente guardar(Componente componente) {
@@ -19,7 +19,7 @@ public class ComponenteRepositoryEnMemoria implements ComponenteRepository {
     }
 
     @Override
-    public Optional<Componente> buscarPorId(UUID id) {
+    public Optional<Componente> buscarPorId(String id) {
         return Optional.ofNullable(almacenamiento.get(id));
     }
 
@@ -29,7 +29,7 @@ public class ComponenteRepositoryEnMemoria implements ComponenteRepository {
     }
 
     @Override
-    public void eliminar(UUID id) {
+    public void eliminar(String id) {
         almacenamiento.remove(id);
     }
 }

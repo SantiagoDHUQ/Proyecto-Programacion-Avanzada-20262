@@ -19,6 +19,6 @@ public record Garantia(LocalDate fechaCompra, int duracionGarantia) {
 
     public boolean estaVigente(LocalDate fechaActual) {
         Objects.requireNonNull(fechaActual, "La fecha actual no puede ser nula");
-        return !fechaActual.isAfter(fechaCompra.plusDays(duracionGarantia));
+        return !fechaActual.isAfter(fechaCompra.plusDays(duracionGarantia-1)); //al restarle uno no se toma en cuenta el día en que vence
     }
 }

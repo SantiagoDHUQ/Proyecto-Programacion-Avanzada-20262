@@ -13,9 +13,9 @@ public interface ComponenteRepository {
 
     Componente guardar(Componente componente);
 
-    Optional<Componente> buscarPorId(UUID id);
+    Optional<Componente> buscarPorId(String id);
 
     List<Componente> listarTodos();
 
-    void eliminar(UUID id);
+    void eliminar(String id);
 }

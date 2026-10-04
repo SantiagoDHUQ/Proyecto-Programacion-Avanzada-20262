@@ -22,7 +22,7 @@ public class MarcarComponenteAgotadoUseCase {
         this.buildRepository = Objects.requireNonNull(buildRepository, "El repositorio de builds no puede ser nulo");
     }
 
-    public Componente ejecutar(UUID componenteId) {
+    public Componente ejecutar(String componenteId) {
         Componente componente = componenteRepository.buscarPorId(componenteId)
                 .orElseThrow(() -> new ReglaDominioException("No existe un Componente con ese identificador"));
 

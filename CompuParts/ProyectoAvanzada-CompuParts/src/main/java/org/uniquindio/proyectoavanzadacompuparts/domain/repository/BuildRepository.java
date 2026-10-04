@@ -13,9 +13,9 @@ public interface BuildRepository {
 
     Build guardar(Build build);
 
-    Optional<Build> buscarPorId(UUID id);
+    Optional<Build> buscarPorId(String id);
 
     List<Build> listarTodos();
 
-    void eliminar(UUID id);
+    void eliminar(String id);
 }

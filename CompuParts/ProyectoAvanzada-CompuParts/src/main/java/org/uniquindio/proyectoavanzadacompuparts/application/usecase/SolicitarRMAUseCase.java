@@ -21,9 +21,9 @@ public class SolicitarRMAUseCase {
         this.componenteRepository = Objects.requireNonNull(componenteRepository, "El repositorio de componentes no puede ser nulo");
     }
 
-    public SolicitudRMA ejecutar(UUID componenteId, String numeroSerie) {
+    public SolicitudRMA ejecutar(String id, String componenteId, String numeroSerie, ) {
         Componente componente = componenteRepository.buscarPorId(componenteId)
                 .orElseThrow(() -> new ReglaDominioException("No existe un Componente con ese identificador"));
-        return SolicitudRMA.crear(componente, numeroSerie, LocalDate.now());
+        return SolicitudRMA.crear(id, componente, numeroSerie, LocalDate.now());
     }
 }
