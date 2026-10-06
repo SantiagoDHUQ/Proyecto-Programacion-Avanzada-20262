@@ -1,5 +1,7 @@
 package org.uniquindio.proyectoavanzadacompuparts.domain.valueobject;
 
+import org.springframework.cglib.core.Local;
+import org.uniquindio.proyectoavanzadacompuparts.domain.entity.SolicitudRMA;
 import org.uniquindio.proyectoavanzadacompuparts.domain.exception.ReglaDominioException;
 
 import java.time.LocalDate;
@@ -8,7 +10,7 @@ import java.util.Objects;
 /**
  * Garantía asociada a la compra del Componente, con fecha de compra y duración en días.
  */
-public record Garantia(LocalDate fechaCompra, int duracionGarantia) {
+public record Garantia(LocalDate fechaCompra, Integer duracionGarantia) {
 
     public Garantia {
         Objects.requireNonNull(fechaCompra, "La fecha de compra no puede ser nula");
@@ -17,8 +19,8 @@ public record Garantia(LocalDate fechaCompra, int duracionGarantia) {
         }
     }
 
-    public boolean estaVigente(LocalDate fechaActual) {
-        Objects.requireNonNull(fechaActual, "La fecha actual no puede ser nula");
-        return !fechaActual.isAfter(fechaCompra.plusDays(duracionGarantia-1)); //al restarle uno no se toma en cuenta el día en que vence
+    public boolean estaVigente() {
+        LocalDate fechaActual = LocalDate.now();
+        return fechaActual.isBefore(fechaCompra.plusDays(duracionGarantia));
     }
 }

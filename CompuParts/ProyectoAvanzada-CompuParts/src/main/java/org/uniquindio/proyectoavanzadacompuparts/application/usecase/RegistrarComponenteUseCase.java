@@ -9,6 +9,7 @@ import org.uniquindio.proyectoavanzadacompuparts.domain.valueobject.Disponibilid
 import org.uniquindio.proyectoavanzadacompuparts.domain.valueobject.EspecificacionTecnica;
 import org.uniquindio.proyectoavanzadacompuparts.domain.valueobject.Precio;
 
+import java.time.LocalDate;
 import java.util.Objects;
 
 /**
@@ -33,7 +34,9 @@ public class RegistrarComponenteUseCase {
                 new Precio(request.precio(), request.moneda()),
                 Disponibilidad.DISPONIBLE,
                 vendedor,
-                request.numeroSerie()
+                request.numeroSerie(),
+                LocalDate.parse(request.fechaCompra()),
+                Integer.parseInt(request.duracionGarantia())
         );
         return componenteRepository.guardar(componente);
     }

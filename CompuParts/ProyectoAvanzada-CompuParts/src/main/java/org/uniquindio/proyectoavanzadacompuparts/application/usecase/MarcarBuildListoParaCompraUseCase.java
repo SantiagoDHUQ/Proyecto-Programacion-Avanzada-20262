@@ -19,7 +19,7 @@ public class MarcarBuildListoParaCompraUseCase {
         this.buildRepository = Objects.requireNonNull(buildRepository, "El repositorio de builds no puede ser nulo");
     }
 
-    public Build ejecutar(String buildId) {
+    public Build ejecutar(UUID buildId) {
         Build build = buildRepository.buscarPorId(buildId)
                 .orElseThrow(() -> new ReglaDominioException("No existe un Build con ese identificador"));
         build.marcarComoListoParaCompra();

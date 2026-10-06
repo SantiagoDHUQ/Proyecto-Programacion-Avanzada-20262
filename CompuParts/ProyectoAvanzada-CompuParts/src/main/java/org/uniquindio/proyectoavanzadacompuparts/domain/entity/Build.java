@@ -5,11 +5,7 @@ import org.uniquindio.proyectoavanzadacompuparts.domain.exception.ReglaDominioEx
 import org.uniquindio.proyectoavanzadacompuparts.domain.valueobject.CategoriaComponente;
 import org.uniquindio.proyectoavanzadacompuparts.domain.valueobject.EstadoBuild;
 
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.List;
-import java.util.Objects;
-import java.util.UUID;
+import java.util.*;
 
 /**
  * Agregado Build: dentro de este agregado viven los Componentes que forman el armado y la evaluación de compatibilidad.
@@ -18,19 +14,19 @@ import java.util.UUID;
 public class Build {
 
     @Getter
-    private final String id;
+    private final UUID id;
     private final List<Componente> componentes;
     @Getter
     private EstadoBuild estado;
 
-    private Build(String id) {
-        this.id = Objects.requireNonNull(id, "El identificador no puede ser nulo");
+    private Build() {
+        this.id = UUID.randomUUID();
         this.componentes = new ArrayList<>();
         this.estado = EstadoBuild.EN_CONSTRUCCION;
     }
 
-    public static Build crear(String id) {
-        return new Build(id);
+    public static Build crear() {
+        return new Build();
     }
 
     /**
@@ -83,6 +79,7 @@ public class Build {
                 .count() > 1;
 
         if (incompatibilidadSocket) {
+            this.estado = EstadoBuild.INCOMPATIBLE; // Al fallar el build su estado se establece como INCOMPATIBLE
             throw new ReglaDominioException("El Build tiene incompatibilidades sin resolver antes de comprar");
         }
 
@@ -95,6 +92,19 @@ public class Build {
         }
         validarCompatibilidad();
         this.estado = EstadoBuild.LISTO_PARA_COMPRA;
+    }
+
+    public Componente componentePorId(String id) {
+        return componentes.stream().filter(c -> c.getId() == id).findFirst()
+                .orElseThrow(()-> new ReglaDominioException("No existe ese componente"));
+    }
+
+    public void eliminarComponente(String id) {
+        if (this.estado != EstadoBuild.LISTO_PARA_COMPRA) {
+            Componente componente = componentePorId(id);
+            componentes.remove(componente);
+        }
+        throw new RuntimeException("");
     }
 
     public List<Componente> getComponentes() {

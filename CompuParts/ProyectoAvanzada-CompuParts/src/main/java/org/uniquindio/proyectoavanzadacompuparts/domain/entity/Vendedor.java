@@ -1,5 +1,6 @@
 package org.uniquindio.proyectoavanzadacompuparts.domain.entity;
 
+import lombok.Getter;
 import org.uniquindio.proyectoavanzadacompuparts.domain.exception.ReglaDominioException;
 
 import java.util.Objects;
@@ -9,6 +10,7 @@ import java.util.UUID;
  * Entidad que representa al vendedor del Componente.
  * El tipo determina si el vendedor puede publicar en Preventa y manejar RMA.
  */
+@Getter
 public class Vendedor {
 
     public enum TipoVendedor {
@@ -39,18 +41,6 @@ public class Vendedor {
 
     public boolean esParticular() {
         return this.tipo == TipoVendedor.PARTICULAR;
-    }
-
-    public String getId() {
-        return id;
-    }
-
-    public String getNombre() {
-        return nombre;
-    }
-
-    public TipoVendedor getTipo() {
-        return tipo;
     }
 
     @Override

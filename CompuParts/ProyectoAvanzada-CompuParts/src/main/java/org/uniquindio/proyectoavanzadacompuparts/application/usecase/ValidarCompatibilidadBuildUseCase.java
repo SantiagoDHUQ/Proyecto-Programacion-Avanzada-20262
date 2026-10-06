@@ -7,6 +7,7 @@ import org.uniquindio.proyectoavanzadacompuparts.domain.repository.BuildReposito
 import org.uniquindio.proyectoavanzadacompuparts.domain.valueobject.EstadoBuild;
 
 import java.util.Objects;
+import java.util.UUID;
 
 /**
  * Caso de uso que valida si un Build es compatible y retorna su estado.
@@ -20,7 +21,7 @@ public class ValidarCompatibilidadBuildUseCase {
         this.buildRepository = Objects.requireNonNull(buildRepository, "El repositorio de builds no puede ser nulo");
     }
 
-    public BuildResponseDTO ejecutar(String buildId) {
+    public BuildResponseDTO ejecutar(UUID buildId) {
         Build build = buildRepository.buscarPorId(buildId)
                 .orElseThrow(() -> new ReglaDominioException("No existe un Build con ese identificador"));
         try {

@@ -29,16 +29,19 @@ public class SolicitudRMATest {
                 new Precio(new BigDecimal("1500000"), "COP");
 
         Componente componente = Componente.crear(
+                "1",
                 "RTX 4070",
                 CategoriaComponente.GPU,
                 especificacion,
                 precio,
                 Disponibilidad.DISPONIBLE,
                 vendedor,
-                "GPU-001"
+                "GPU-001",
+                LocalDate.now(),
+                30
         );
-        SolicitudRMA uno = SolicitudRMA.crear(componente, "123", LocalDate.of(2024,12, 30));
-        SolicitudRMA dos = SolicitudRMA.crear(componente, "124", LocalDate.of(2024, 12, 29));
+        SolicitudRMA uno = SolicitudRMA.crear("3" ,componente,LocalDate.of(2024,12, 30));
+        SolicitudRMA dos = SolicitudRMA.crear( "",componente, LocalDate.of(2024, 12, 29));
 
         assertNotEquals(uno, dos);
     }

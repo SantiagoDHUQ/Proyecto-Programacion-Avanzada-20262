@@ -22,6 +22,9 @@ public record RegistrarComponenteRequestDTO(
         @DecimalMin("1")
         int wattajeRequerido,
 
+        @NotBlank(message = "El tipo de memoria es necesario")
+        String tipoMemoria,
+
         @NotBlank(message = "La moneda es necesaria")
         String moneda,
 
@@ -33,6 +36,12 @@ public record RegistrarComponenteRequestDTO(
         String vendedorTipo,
 
         @NotBlank(message = "Se requiere un número de serie")
-        String numeroSerie
+        String numeroSerie,
+
+        @NotBlank(message = "Se necesita la fecha de compra")
+        String fechaCompra,
+
+        @NotBlank
+        String duracionGarantia
 ) {
 }

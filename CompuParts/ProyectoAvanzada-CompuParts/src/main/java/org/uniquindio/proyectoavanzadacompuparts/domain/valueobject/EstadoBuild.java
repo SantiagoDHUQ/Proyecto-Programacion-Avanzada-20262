@@ -6,5 +6,7 @@ package org.uniquindio.proyectoavanzadacompuparts.domain.valueobject;
 public enum EstadoBuild {
     EN_CONSTRUCCION,
     INCOMPATIBLE,
-    LISTO_PARA_COMPRA
+    LISTO_PARA_COMPRA,
+    COMPRADO,
+    CANCELADO
 }

@@ -15,24 +15,14 @@ import java.util.UUID;
 public class MarcarComponenteAgotadoUseCase {
 
     private final ComponenteRepository componenteRepository;
-    private final BuildRepository buildRepository;
 
     public MarcarComponenteAgotadoUseCase(ComponenteRepository componenteRepository, BuildRepository buildRepository) {
         this.componenteRepository = Objects.requireNonNull(componenteRepository, "El repositorio de componentes no puede ser nulo");
-        this.buildRepository = Objects.requireNonNull(buildRepository, "El repositorio de builds no puede ser nulo");
     }
 
     public Componente ejecutar(String componenteId) {
         Componente componente = componenteRepository.buscarPorId(componenteId)
                 .orElseThrow(() -> new ReglaDominioException("No existe un Componente con ese identificador"));
-
-        boolean estaEnBuildActivo = buildRepository.listarTodos().stream()
-                .flatMap(build -> build.getComponentes().stream())
-                .anyMatch(c -> c.equals(componente));
-
-        if (estaEnBuildActivo) {
-            throw new ReglaDominioException("No se puede eliminar un Componente que forma parte de un Build activo; solo se puede marcar como AGOTADO");
-        }
 
         componente.marcarAgotado();
         return componenteRepository.guardar(componente);

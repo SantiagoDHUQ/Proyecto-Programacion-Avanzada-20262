@@ -17,8 +17,8 @@ public class CrearBuildUseCase {
         this.buildRepository = Objects.requireNonNull(buildRepository, "El repositorio de builds no puede ser nulo");
     }
 
-    public Build ejecutar(String id) {
-        Build build = Build.crear(id);
+    public Build ejecutar() {
+        Build build = Build.crear();
         return buildRepository.guardar(build);
     }
 }
