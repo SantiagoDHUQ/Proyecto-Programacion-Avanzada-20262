@@ -7,20 +7,22 @@ import org.uniquindio.proyectoavanzadacompuparts.domain.exception.ReglaDominioEx
 import java.time.LocalDate;
 import java.util.Objects;
 
+import static org.uniquindio.proyectoavanzadacompuparts.domain.exception.ReglaDominioException.exigir;
+
 /**
- * Garantía asociada a la compra del Componente, con fecha de compra y duración en días.
+ * Garantía del fabricante: solo la DURACIÓN en días.
+ * La fecha de compra pertenece a la Compra, por eso se recibe al consultar la vigencia.
  */
-public record Garantia(LocalDate fechaCompra, Integer duracionGarantia) {
+public record Garantia(int dias) {
 
     public Garantia {
-        Objects.requireNonNull(fechaCompra, "La fecha de compra no puede ser nula");
-        if (duracionGarantia <= 0) {
-            throw new ReglaDominioException("La duración de la garantía debe ser positiva");
-        }
+        exigir(dias > 0, "La duración de la garantía debe ser positiva");
     }
 
-    public boolean estaVigente() {
-        LocalDate fechaActual = LocalDate.now();
-        return fechaActual.isBefore(fechaCompra.plusDays(duracionGarantia));
+    /** Regla 3: vigente solo si hoy es ANTERIOR a fechaCompra + dias. */
+    public boolean estaVigente(LocalDate fechaCompra, LocalDate hoy) {
+        exigir(fechaCompra != null, "La fecha de compra es obligatoria");
+        exigir(hoy != null, "La fecha actual es obligatoria");
+        return hoy.isBefore(fechaCompra.plusDays(dias));
     }
 }

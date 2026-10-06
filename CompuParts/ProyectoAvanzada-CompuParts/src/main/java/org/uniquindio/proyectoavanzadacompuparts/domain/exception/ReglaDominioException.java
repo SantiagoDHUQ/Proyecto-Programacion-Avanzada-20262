@@ -9,4 +9,8 @@ public class ReglaDominioException extends RuntimeException {
     public ReglaDominioException(String mensaje) {
         super(mensaje);
     }
+
+    public static void exigir(boolean condicion, String msj) {
+        if (!condicion) throw new ReglaDominioException(msj);
+    }
 }

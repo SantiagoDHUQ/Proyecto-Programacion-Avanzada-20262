@@ -27,8 +27,8 @@ import java.util.UUID;
 public class Compra {
 
     private final String id;
-    private final UUID buildId;      // solo el id: Modelo3D es OTRO agregado
-    private final String compradorId;   // solo el id: Usuario es OTRO agregado
+    private final UUID buildId;      // solo el id: Build es OTRO agregado
+    private final String compradorId;   // solo el id: Comprador es OTRO agregado
     private final Precio precioCongelado;  // el precio "de una foto", no cambia después
     private final LocalDateTime fechaCompra;
     private EstadoCompra estado;

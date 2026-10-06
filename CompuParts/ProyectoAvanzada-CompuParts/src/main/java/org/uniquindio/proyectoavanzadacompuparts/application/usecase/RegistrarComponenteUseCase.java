@@ -32,10 +32,8 @@ public class RegistrarComponenteUseCase {
                 CategoriaComponente.valueOf(request.categoria()),
                 new EspecificacionTecnica(request.socket(), request.wattajeRequerido(), request.tipoMemoria()),
                 new Precio(request.precio(), request.moneda()),
-                Disponibilidad.DISPONIBLE,
                 vendedor,
                 request.numeroSerie(),
-                LocalDate.parse(request.fechaCompra()),
                 Integer.parseInt(request.duracionGarantia())
         );
         return componenteRepository.guardar(componente);

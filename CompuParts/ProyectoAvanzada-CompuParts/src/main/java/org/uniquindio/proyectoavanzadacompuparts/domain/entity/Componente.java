@@ -5,11 +5,10 @@ import org.uniquindio.proyectoavanzadacompuparts.domain.valueobject.*;
 
 import java.time.LocalDate;
 import java.util.Objects;
+import java.util.Optional;
 
-/**
- * Agregado Componente: el ciclo de vida del componente se guarda dentro de esta raíz.
- * SolicitudRMA NO vive dentro del agregado, se referencia por id desde fuera.
- */
+import static org.uniquindio.proyectoavanzadacompuparts.domain.exception.ReglaDominioException.exigir;
+
 @Getter
 public class Componente {
 
@@ -20,41 +19,40 @@ public class Componente {
     private final Precio precio;
     private final Vendedor vendedor;
     private final String numeroSerie;
-    private final LocalDate fechaCompra;
-    private final Garantia garantia;
+    private final Garantia garantia;          // null cuando es de segunda mano
     private Disponibilidad disponibilidad;
     private LocalDate fechaEstimadaLlegada;
 
     private Componente(String id, String nombre, CategoriaComponente categoria, EspecificacionTecnica especificacion,
-                       Precio precio, Disponibilidad disponibilidad, Vendedor vendedor, String numeroSerie,
-                       LocalDate fechaCompra) {
-        this.id = Objects.requireNonNull(id, "El identificador no puede ser nulo");
-        this.nombre = Objects.requireNonNull(nombre, "El nombre no puede ser nulo");
-        this.categoria = Objects.requireNonNull(categoria, "La categoría no puede ser nula");
-        this.especificacion = Objects.requireNonNull(especificacion, "La especificación no puede ser nula");
-        this.precio = Objects.requireNonNull(precio, "El precio no puede ser nulo");
-        this.disponibilidad = Objects.requireNonNull(disponibilidad, "La disponibilidad no puede ser nula");
-        this.vendedor = Objects.requireNonNull(vendedor, "El vendedor no puede ser nulo");
-        this.numeroSerie = Objects.requireNonNull(numeroSerie, "El número de serie no puede ser nulo");
-        this.fechaCompra = fechaCompra != null ? fechaCompra : LocalDate.now();
-        this.garantia = new Garantia(LocalDate.now(), null);
-        if (nombre.isBlank()) {
-            throw new ReglaDominioException("El nombre del componente no puede estar vacío");
-        }
-        if (numeroSerie.isBlank()) {
-            throw new ReglaDominioException("El número de serie no puede estar vacío");
-        }
+                       Precio precio, Vendedor vendedor, String numeroSerie, Garantia garantia) {
+        this.id = id;
+        this.nombre = nombre;
+        this.categoria = categoria;
+        this.especificacion = especificacion;
+        this.precio = precio;
+        this.vendedor = vendedor;
+        this.numeroSerie = numeroSerie;
+        this.garantia = garantia;
+        this.disponibilidad = Disponibilidad.DISPONIBLE;   // la preventa entra por pasarAPreventa()
     }
 
-    public static Componente crear(String id, String nombre, CategoriaComponente categoria, EspecificacionTecnica especificacion,
-                                   Precio precio, Disponibilidad disponibilidad, Vendedor vendedor, String numeroSerie, LocalDate fechaCompra, Integer duracionGarantia) {
-        if (vendedor.esAutorizado()) {
-            assert duracionGarantia != null; throw new ReglaDominioException("La duración de la garantía es obligatoria");
-        }
-        if (vendedor.esParticular()) {
-            assert duracionGarantia == null; throw new ReglaDominioException("No puede tener garantía");
-        }
-        return new Componente(id, nombre, categoria, especificacion, precio, disponibilidad, vendedor, numeroSerie, fechaCompra);
+    public static Componente crear(String id, String nombre, CategoriaComponente categoria,
+                                   EspecificacionTecnica especificacion, Precio precio, Vendedor vendedor,
+                                   String numeroSerie, Integer duracionGarantia) {
+        exigir(id != null && !id.isBlank(), "El identificador del componente es obligatorio");
+        exigir(nombre != null && !nombre.isBlank(), "El nombre del componente no puede estar vacío");
+        exigir(categoria != null, "La categoría es obligatoria");
+        exigir(especificacion != null, "La especificación es obligatoria");
+        exigir(precio != null, "El precio es obligatorio");
+        exigir(vendedor != null, "El vendedor es obligatorio");
+        exigir(numeroSerie != null && !numeroSerie.isBlank(), "El número de serie no puede estar vacío");
+
+        boolean conGarantia = duracionGarantia != null;
+        exigir(!(vendedor.esAutorizado() && !conGarantia), "Un vendedor autorizado debe registrar la garantía");
+        exigir(!(vendedor.esParticular() && conGarantia), "Un componente de segunda mano no tiene garantía");
+
+        Garantia garantia = conGarantia ? new Garantia(duracionGarantia) : null;
+        return new Componente(id, nombre, categoria, especificacion, precio, vendedor, numeroSerie, garantia);
     }
 
     /**
@@ -78,13 +76,17 @@ public class Componente {
         this.disponibilidad = Disponibilidad.AGOTADO;
     }
 
+    // TODO: se reemplaza por Build.estaActivo() cuando se reescriba EliminarComponenteUseCase
     public boolean esActivoEnBuild(Build build) {
         return !(build.getEstado().equals(EstadoBuild.CANCELADO) || build.getEstado().equals(EstadoBuild.COMPRADO));
     }
 
-    public boolean admiteRMA() {
-        return garantia.estaVigente() && vendedor.esAutorizado();
+    /** Reglas 3, 5 y 8: con garantía vigente (hoy < fechaCompra + días) y vendedor autorizado. */
+    public boolean admiteRMA(LocalDate fechaCompra, LocalDate hoy) {
+        return garantia != null && vendedor.esAutorizado() && garantia.estaVigente(fechaCompra, hoy);
     }
+
+    public Optional<Garantia> getGarantia() { return Optional.ofNullable(garantia); }
 
     @Override
     public boolean equals(Object o) {
