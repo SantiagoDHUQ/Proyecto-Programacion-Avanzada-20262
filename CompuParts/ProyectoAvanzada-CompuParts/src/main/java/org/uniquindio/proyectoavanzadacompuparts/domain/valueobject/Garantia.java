@@ -1,11 +1,6 @@
 package org.uniquindio.proyectoavanzadacompuparts.domain.valueobject;
 
-import org.springframework.cglib.core.Local;
-import org.uniquindio.proyectoavanzadacompuparts.domain.entity.SolicitudRMA;
-import org.uniquindio.proyectoavanzadacompuparts.domain.exception.ReglaDominioException;
-
 import java.time.LocalDate;
-import java.util.Objects;
 
 import static org.uniquindio.proyectoavanzadacompuparts.domain.exception.ReglaDominioException.exigir;
 

@@ -1,48 +1,34 @@
 package org.uniquindio.proyectoavanzadacompuparts.domain.entity;
 
 import org.junit.jupiter.api.Test;
-import org.uniquindio.proyectoavanzadacompuparts.domain.valueobject.CategoriaComponente;
-import org.uniquindio.proyectoavanzadacompuparts.domain.valueobject.Disponibilidad;
-import org.uniquindio.proyectoavanzadacompuparts.domain.valueobject.EspecificacionTecnica;
-import org.uniquindio.proyectoavanzadacompuparts.domain.valueobject.Precio;
+import org.uniquindio.proyectoavanzadacompuparts.domain.valueobject.*;
 
-import java.math.BigDecimal;
 import java.time.LocalDate;
 
+import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertNotEquals;
 
 public class SolicitudRMATest {
+
+    //Arrange
+    private static final LocalDate COMPRA = LocalDate.of(2026, 1, 1);
+    private static final int GARANTIA = 30;                       // vence el 2026-01-31
+
+    private SolicitudRMA solicitudEn(String id, LocalDate fechaSolicitud) {
+        return SolicitudRMA.crear(id, "comp-1", "compra-1", COMPRA, GARANTIA, "comprador-1", fechaSolicitud);
+    }
+
     @Test
-    void dosSolicitudesRMAConMismoComponentesNoSonIguales(){
-        //Arrange
-        Vendedor vendedor = Vendedor.crear(
-                "1",
-                "Distribuidor Oficial",
-                "AUTORIZADO"
-        );
+    void solicitudDentroDeGarantiaNaceEnPendiente() {
+        SolicitudRMA rma = solicitudEn("rma-1", COMPRA.plusDays(10));
 
-        EspecificacionTecnica especificacion =
-                new EspecificacionTecnica("AM5", 100, "DDR5");
+        assertEquals(EstadoSolicitudRMA.PENDIENTE, rma.getEstado());
+        assertEquals("comp-1", rma.getComponenteId());
+        assertEquals("compra-1", rma.getCompraId());
+    }
 
-        Precio precio =
-                new Precio(new BigDecimal("1500000"), "COP");
-
-        Componente componente = Componente.crear(
-                "1",
-                "RTX 4070",
-                CategoriaComponente.GPU,
-                especificacion,
-                precio,
-                Disponibilidad.DISPONIBLE,
-                vendedor,
-                "GPU-001",
-                LocalDate.now(),
-                30
-        );
-        SolicitudRMA uno = SolicitudRMA.crear("3" ,componente,LocalDate.of(2024,12, 30));
-        SolicitudRMA dos = SolicitudRMA.crear( "",componente, LocalDate.of(2024, 12, 29));
-
-        assertNotEquals(uno, dos);
+    @Test
+    void solicitudElUltimoDiaVigenteEsValida() {
+        assertDoesNotThrow(() -> solicitudEn("rma-1", COMPRA.plusDays(GARANTIA - 1)));
     }
 }

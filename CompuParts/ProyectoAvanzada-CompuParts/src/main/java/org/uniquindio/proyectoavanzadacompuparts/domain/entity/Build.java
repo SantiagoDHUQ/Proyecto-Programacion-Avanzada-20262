@@ -95,16 +95,17 @@ public class Build {
     }
 
     public Componente componentePorId(String id) {
-        return componentes.stream().filter(c -> c.getId() == id).findFirst()
+        return componentes.stream().filter(c -> c.getId().equals(id)).findFirst()
                 .orElseThrow(()-> new ReglaDominioException("No existe ese componente"));
     }
 
     public void eliminarComponente(String id) {
-        if (this.estado != EstadoBuild.LISTO_PARA_COMPRA) {
-            Componente componente = componentePorId(id);
-            componentes.remove(componente);
+        if (this.estado == EstadoBuild.LISTO_PARA_COMPRA) {
+            throw new ReglaDominioException("No se puede eliminar un componente de un Build listo para compra");
         }
-        throw new RuntimeException("");
+        Componente componente = componentePorId(id);
+        componentes.remove(componente);
+        this.estado = EstadoBuild.EN_CONSTRUCCION;
     }
 
     public List<Componente> getComponentes() {
