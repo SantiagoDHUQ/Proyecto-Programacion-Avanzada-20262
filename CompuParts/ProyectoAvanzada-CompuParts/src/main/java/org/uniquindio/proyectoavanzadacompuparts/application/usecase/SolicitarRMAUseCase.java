@@ -25,10 +25,6 @@ public class SolicitarRMAUseCase {
     }
 
     public SolicitudRMA ejecutar(String id, String componenteId, String fechaSolicitud, String vendedorId) {
-        Componente componente = componenteRepository.buscarPorId(componenteId)
-                .orElseThrow(() -> new ReglaDominioException("No existe un Componente con ese identificador"));
-        Vendedor vendedor = vendedorRepository.buscarPorId(vendedorId)
-                .orElseThrow(()-> new ReglaDominioException("No existe un vendedor con ese identificador"));
-        return SolicitudRMA.crear(id, componente, LocalDate.parse(fechaSolicitud));
+        throw new UnsupportedOperationException("SolicitarRMAUseCase is not fully implemented yet and needs access to CompraRepository.");
     }
 }
