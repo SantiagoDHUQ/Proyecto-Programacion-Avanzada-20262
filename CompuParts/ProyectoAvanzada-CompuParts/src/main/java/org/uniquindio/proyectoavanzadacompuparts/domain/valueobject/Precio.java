@@ -1,5 +1,7 @@
 package org.uniquindio.proyectoavanzadacompuparts.domain.valueobject;
 
+import org.uniquindio.proyectoavanzadacompuparts.domain.exception.ReglaDominioException;
+
 import java.math.BigDecimal;
 import java.util.Objects;
 
@@ -10,19 +12,17 @@ import java.util.Objects;
 public record Precio(BigDecimal monto, String moneda) {
 
     public Precio {
-        Objects.requireNonNull(monto, "El monto no puede ser nulo");
-        Objects.requireNonNull(moneda, "La moneda no puede ser nula");
         if (monto.signum() < 0) {
-            throw new IllegalArgumentException("El monto no puede ser negativo");
+            throw new ReglaDominioException("El monto no puede ser negativo");
         }
         if (moneda.isBlank()) {
-            throw new IllegalArgumentException("La moneda no puede estar vacía");
+            throw new ReglaDominioException("La moneda no puede estar vacía");
         }
     }
 
     public Precio sumar(Precio otro) {
         if (!this.moneda.equals(otro.moneda)) {
-            throw new IllegalArgumentException("No se pueden sumar precios en distinta moneda");
+            throw new ReglaDominioException("No se pueden sumar precios en distinta moneda");
         }
         return new Precio(this.monto.add(otro.monto), this.moneda);
     }

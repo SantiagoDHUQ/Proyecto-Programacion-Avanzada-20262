@@ -9,6 +9,15 @@ import java.util.Optional;
 
 import static org.uniquindio.proyectoavanzadacompuparts.domain.exception.ReglaDominioException.exigir;
 
+/**
+ * Agregado Componente.
+ * 
+ * Invariantes que garantiza:
+ *  - Un componente de un vendedor particular nunca tiene garantía.
+ *  - Un vendedor autorizado debe registrar la garantía de sus componentes.
+ *  - Un componente en PREVENTA solo puede ser publicado por un vendedor autorizado.
+ *  - Un componente en PREVENTA requiere obligatoriamente una fecha estimada de llegada.
+ */
 @Getter
 public class Componente {
 

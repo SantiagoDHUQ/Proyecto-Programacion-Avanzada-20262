@@ -9,7 +9,12 @@ import java.util.*;
 
 /**
  * Agregado Build: dentro de este agregado viven los Componentes que forman el armado y la evaluación de compatibilidad.
- * SolicitudRMA NO vive dentro del agregado, se referencia fuera de él.
+ * 
+ * Invariantes que garantiza:
+ *  - Un Build siempre nace en estado EN_CONSTRUCCION.
+ *  - Solo se puede eliminar un componente si el estado NO es LISTO_PARA_COMPRA.
+ *  - Para marcar como LISTO_PARA_COMPRA, el Build debe ser completo (CPU, Motherboard, PSU) y validar la compatibilidad (consumo PSU y compatibilidad de socket).
+ *  - La suma de consumo de todos los componentes no debe exceder el wattaje del PSU.
  */
 public class Build {
 

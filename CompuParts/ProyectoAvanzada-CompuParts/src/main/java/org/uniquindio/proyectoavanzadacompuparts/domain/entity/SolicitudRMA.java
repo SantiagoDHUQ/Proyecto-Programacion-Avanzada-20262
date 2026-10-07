@@ -9,6 +9,12 @@ import java.util.Objects;
 
 /**
  * Solicitud de garantía asociada a un Componente con falla de fábrica y en vigencia.
+ * 
+ * Invariantes que garantiza:
+ *  - Toda solicitud nace en estado PENDIENTE.
+ *  - La fecha de solicitud no puede ser anterior a la fecha de compra.
+ *  - La solicitud debe crearse dentro del periodo de garantía (fechaSolicitud < fechaCompra + duracionGarantia).
+ *  - El rechazo de una solicitud exige obligatoriamente indicar un motivo.
  */
 @Getter
 public class SolicitudRMA {

@@ -8,5 +8,5 @@ public enum EstadoBuild {
     INCOMPATIBLE,
     LISTO_PARA_COMPRA,
     COMPRADO,
-    CANCELADO
+    CANCELADO;
 }
