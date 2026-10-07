@@ -1,3 +1,5 @@
+/*REGALS DEL NEGOCIO (el corazon) */
+
 package org.uniquindio.proyectoavanzadacompuparts.domain.entity;
 
 import org.uniquindio.proyectoavanzadacompuparts.domain.exception.ReglaDominioException;

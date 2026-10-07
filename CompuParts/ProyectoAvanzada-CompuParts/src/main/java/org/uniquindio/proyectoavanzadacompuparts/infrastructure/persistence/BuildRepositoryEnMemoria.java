@@ -1,3 +1,4 @@
+/*CÓMO se guarda o conecta todo (detalles técnicos) */
 package org.uniquindio.proyectoavanzadacompuparts.infrastructure.persistence;
 
 import org.uniquindio.proyectoavanzadacompuparts.domain.entity.Build;

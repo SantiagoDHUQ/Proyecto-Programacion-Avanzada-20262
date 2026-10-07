@@ -1,3 +1,5 @@
+/*CASOS DE USO: QUÉ puede hacer el sistema */
+
 package org.uniquindio.proyectoavanzadacompuparts.application.usecase;
 
 import org.uniquindio.proyectoavanzadacompuparts.application.dto.AgregarComponenteABuildRequestDTO;
