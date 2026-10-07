@@ -6,6 +6,8 @@ import org.uniquindio.proyectoavanzadacompuparts.domain.exception.ReglaDominioEx
 import java.util.Objects;
 import java.util.UUID;
 
+import static org.uniquindio.proyectoavanzadacompuparts.domain.exception.ReglaDominioException.exigir;
+
 /**
  * Entidad que representa al vendedor del Componente.
  * El tipo determina si el vendedor puede publicar en Preventa y manejar RMA.
@@ -23,15 +25,21 @@ public class Vendedor {
     private final TipoVendedor tipo;
 
     private Vendedor(String id, String nombre, TipoVendedor tipo) {
-        this.id = Objects.requireNonNull(id, "El identificador del vendedor no puede ser nulo");
-        this.nombre = Objects.requireNonNull(nombre, "El nombre del vendedor no puede ser nulo");
-        this.tipo = Objects.requireNonNull(tipo, "El tipo del vendedor no puede ser nulo");
+        exigir(id != null, "El identificador del vendedor no puede ser nulo");
+        exigir(nombre != null, "El nombre del vendedor no puede ser nulo");
+        exigir(tipo != null, "El tipo del vendedor no puede ser nulo");
+        this.id = id;
+        this.nombre = nombre;
+        this.tipo = tipo;
         if (nombre.isBlank()) {
             throw new ReglaDominioException("El nombre del vendedor no puede estar vacío");
         }
     }
 
     public static Vendedor crear(String id, String nombre, String tipo) {
+        if (!"AUTORIZADO".equalsIgnoreCase(tipo) && !"PARTICULAR".equalsIgnoreCase(tipo)){
+            throw new ReglaDominioException("Ese tipo de vendedor no existe");
+        }
         return new Vendedor(id, nombre, TipoVendedor.valueOf(tipo.toUpperCase()));
     }
 

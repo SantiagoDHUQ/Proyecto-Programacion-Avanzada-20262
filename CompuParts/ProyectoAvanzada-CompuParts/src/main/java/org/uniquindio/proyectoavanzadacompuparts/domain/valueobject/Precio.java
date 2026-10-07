@@ -5,6 +5,8 @@ import org.uniquindio.proyectoavanzadacompuparts.domain.exception.ReglaDominioEx
 import java.math.BigDecimal;
 import java.util.Objects;
 
+import static org.uniquindio.proyectoavanzadacompuparts.domain.exception.ReglaDominioException.exigir;
+
 /**
  * Value Object que representa el precio de un Componente.
  * Es inmutable: cualquier cambio de precio implica crear una nueva instancia.
@@ -12,18 +14,15 @@ import java.util.Objects;
 public record Precio(BigDecimal monto, String moneda) {
 
     public Precio {
-        if (monto.signum() < 0) {
-            throw new ReglaDominioException("El monto no puede ser negativo");
-        }
-        if (moneda.isBlank()) {
-            throw new ReglaDominioException("La moneda no puede estar vacía");
-        }
+        exigir(monto != null, "El monto del precio no puede ser nulo");
+        exigir(moneda != null && !moneda.isBlank(), "La moneda no puede estar vacía");
+        exigir(monto.signum() >= 0, "El monto del precio no puede ser negativo");
+        moneda = moneda.trim().toUpperCase();
     }
 
     public Precio sumar(Precio otro) {
-        if (!this.moneda.equals(otro.moneda)) {
-            throw new ReglaDominioException("No se pueden sumar precios en distinta moneda");
-        }
+        exigir(otro != null, "No se puede sumar un precio nulo");
+        exigir(this.moneda.equals(otro.moneda), "No se pueden sumar precios en distinta moneda");
         return new Precio(this.monto.add(otro.monto), this.moneda);
     }
 }

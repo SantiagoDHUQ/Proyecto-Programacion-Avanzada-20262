@@ -7,6 +7,8 @@ import org.uniquindio.proyectoavanzadacompuparts.domain.valueobject.EstadoBuild;
 
 import java.util.*;
 
+import static org.uniquindio.proyectoavanzadacompuparts.domain.exception.ReglaDominioException.exigir;
+
 /**
  * Agregado Build: dentro de este agregado viven los Componentes que forman el armado y la evaluación de compatibilidad.
  * 
@@ -16,12 +18,11 @@ import java.util.*;
  *  - Para marcar como LISTO_PARA_COMPRA, el Build debe ser completo (CPU, Motherboard, PSU) y validar la compatibilidad (consumo PSU y compatibilidad de socket).
  *  - La suma de consumo de todos los componentes no debe exceder el wattaje del PSU.
  */
+@Getter
 public class Build {
 
-    @Getter
     private final UUID id;
     private final List<Componente> componentes;
-    @Getter
     private EstadoBuild estado;
 
     private Build() {
@@ -38,7 +39,8 @@ public class Build {
      * Invariante del agregado: un build solo puede agregarse si no es nulo; después se revalida el estado.
      */
     public void agregarComponente(Componente componente) {
-        this.componentes.add(Objects.requireNonNull(componente, "El componente no puede ser nulo"));
+        exigir(componente != null, "El componente no puede ser nulo");
+        this.componentes.add(componente);
         this.estado = EstadoBuild.EN_CONSTRUCCION;
     }
 

@@ -10,8 +10,12 @@ import java.util.Objects;
 public record EspecificacionTecnica(String socket, int wattajeRequerido, String tipoMemoria) {
 
     public EspecificacionTecnica {
-        Objects.requireNonNull(socket, "El socket no puede ser nulo");
-        Objects.requireNonNull(tipoMemoria, "El tipo de memoria no puede ser nulo");
+        if (socket == null) {
+            throw new ReglaDominioException("El socket no puede ser nulo");
+        }
+        if (tipoMemoria == null) {
+            throw new ReglaDominioException("El tipo de memoria no puede ser nulo");
+        }
         if (socket.isBlank()) {
             throw new ReglaDominioException("El socket no puede estar vacío");
         }
