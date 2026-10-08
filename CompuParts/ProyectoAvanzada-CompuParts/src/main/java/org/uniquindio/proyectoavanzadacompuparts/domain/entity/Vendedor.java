@@ -4,7 +4,6 @@ import lombok.Getter;
 import org.uniquindio.proyectoavanzadacompuparts.domain.exception.ReglaDominioException;
 
 import java.util.Objects;
-import java.util.UUID;
 
 import static org.uniquindio.proyectoavanzadacompuparts.domain.exception.ReglaDominioException.exigir;
 
@@ -25,22 +24,26 @@ public class Vendedor {
     private final TipoVendedor tipo;
 
     private Vendedor(String id, String nombre, TipoVendedor tipo) {
-        exigir(id != null, "El identificador del vendedor no puede ser nulo");
-        exigir(nombre != null, "El nombre del vendedor no puede ser nulo");
+        exigir(id != null && !id.isBlank(), "El identificador del vendedor no puede ser nulo");
+        exigir(nombre != null && !nombre.isBlank(), "El nombre del vendedor no puede ser nulo");
         exigir(tipo != null, "El tipo del vendedor no puede ser nulo");
         this.id = id;
         this.nombre = nombre;
         this.tipo = tipo;
-        if (nombre.isBlank()) {
-            throw new ReglaDominioException("El nombre del vendedor no puede estar vacío");
-        }
     }
 
     public static Vendedor crear(String id, String nombre, String tipo) {
-        if (!"AUTORIZADO".equalsIgnoreCase(tipo) && !"PARTICULAR".equalsIgnoreCase(tipo)){
-            throw new ReglaDominioException("Ese tipo de vendedor no existe");
+        return new Vendedor(id, nombre, convertirTipo(tipo));
+    }
+
+    //valueOf lanza una excepción diferente, se atrapa para que se comporte como una ReglaDominioException
+    private static TipoVendedor convertirTipo(String tipo) {
+        exigir(tipo != null && !tipo.isBlank(), "El tipo del vendedor es obligatorio");
+        try {
+            return TipoVendedor.valueOf(tipo.trim().toUpperCase());
+        } catch (IllegalArgumentException e) {
+            throw new ReglaDominioException("Tipo de vendedor inválido: " + tipo + " (use AUTORIZADO o PARTICULAR)");
         }
-        return new Vendedor(id, nombre, TipoVendedor.valueOf(tipo.toUpperCase()));
     }
 
     public boolean esAutorizado() {

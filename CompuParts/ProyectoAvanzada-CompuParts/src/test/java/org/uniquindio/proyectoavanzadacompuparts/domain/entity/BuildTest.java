@@ -21,10 +21,6 @@ public class BuildTest {
     private final EspecificacionTecnica spec = new EspecificacionTecnica("AM5", 100, "DDR5");
     private final Precio precio = new Precio(new BigDecimal("1500000"), "COP");
 
-    private Componente crearVacio() {
-        return Componente.crear("", "", null, null, null, null, "", null);
-    }
-
     @Test
     void buildIncompletoNoDebeMarcarseListoParaCompra() {
 

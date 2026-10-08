@@ -12,7 +12,7 @@ public class SolicitudRMATest {
 
     //Arrange general
     private static final LocalDate COMPRA = LocalDate.of(2026, 1, 1);
-    private static final int GARANTIA = 30;                       // vence el 2026-01-31
+    private static final int GARANTIA = 30;// vence el 2026-01-31
 
     private SolicitudRMA solicitud(String id, LocalDate fechaSolicitud) {
         return SolicitudRMA.crear(id, "comp-1", "compra-1", COMPRA, GARANTIA, "comprador-1", fechaSolicitud);
