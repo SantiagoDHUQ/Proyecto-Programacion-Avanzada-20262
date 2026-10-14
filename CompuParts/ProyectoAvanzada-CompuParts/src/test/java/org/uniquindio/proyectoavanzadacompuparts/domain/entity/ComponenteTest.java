@@ -8,6 +8,7 @@ import org.uniquindio.proyectoavanzadacompuparts.domain.valueobject.Especificaci
 import org.uniquindio.proyectoavanzadacompuparts.domain.valueobject.Precio;
 
 import java.math.BigDecimal;
+import java.time.LocalDate;
 
 import static org.junit.jupiter.api.Assertions.*;
 
@@ -24,7 +25,6 @@ public class ComponenteTest {
     }
     @Test
     void componenteNoDebePasarAPreventaSinFechaEstimada() {
-
         //Arrange
         Componente c = crear("1", autorizado, 60);
         //Act & Assert
@@ -33,7 +33,6 @@ public class ComponenteTest {
 
     @Test
     void vendedorAutorizadoConGarantiaCreaComponente() {
-
         //Arrange
         Componente c = crear("1", autorizado, 365);
         //Act & Assert
@@ -43,21 +42,18 @@ public class ComponenteTest {
 
     @Test
     void vendedorAutorizadoSinGarantiaSeRechaza() {
-
         //Arrange, Act & Assert
         assertThrows(ReglaDominioException.class, () -> crear("1", autorizado, null));
     }
 
     @Test
     void vendedorParticularConGarantiaSeRechaza() {
-
         //Arrange, Act & Assert
         assertThrows(ReglaDominioException.class, () -> crear("1", particular, 30));
     }
 
     @Test
     void vendedorParticularSinGarantiaCreaComponenteUsado() {
-
         //Arragne
         Componente c = crear("1", particular, null);
 
@@ -67,11 +63,27 @@ public class ComponenteTest {
 
     @Test
     void datosObligatoriosFaltantesLanzanReglaDominio() {
-
         //Arrange, Act & Assert
         assertThrows(ReglaDominioException.class, () -> crear("", autorizado, 30));
         assertThrows(ReglaDominioException.class, () -> crear("1", null, 30));
         assertThrows(ReglaDominioException.class, () -> Componente.crear("1", " ", CategoriaComponente.GPU, spec, precio, autorizado, "S1", 30));
         assertThrows(ReglaDominioException.class, () -> Componente.crear("1", "x", CategoriaComponente.GPU, spec, precio, autorizado, " ", 30));
     }
+
+    @Test
+    void particularNoPuedePasarAPreventa() {
+        //Arrange
+        Componente componente = crear("1", particular, null);
+
+        //Act & Assert
+        assertThrows(ReglaDominioException.class, () -> componente.pasarAPreventa(LocalDate.of(1523, 3, 23)));
+    }
+
+    /**
+     * autorizadoPuedePasarAPreventaConFecha	queda PREVENTA con la fecha guardada
+     * autorizadoDentroDeGarantiaAdmiteRMA	con garantía de 30 días: admiteRMA(compra, compra.plusDays(29)) es true
+     * autorizadoElDiaDelVencimientoNoAdmiteRMA	admiteRMA(compra, compra.plusDays(30)) es false
+     * componenteUsadoNuncaAdmiteRMA	vendedor particular sin garantía: admiteRMA(...) es false
+     * componentesConElMismoId…SonIguales	mismo id con otros datos: iguales
+     */
 }

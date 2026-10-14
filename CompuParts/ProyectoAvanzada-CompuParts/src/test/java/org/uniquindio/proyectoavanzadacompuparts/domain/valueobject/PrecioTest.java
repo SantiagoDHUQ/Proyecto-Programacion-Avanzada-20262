@@ -5,13 +5,11 @@ import org.uniquindio.proyectoavanzadacompuparts.domain.exception.ReglaDominioEx
 
 import java.math.BigDecimal;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.*;
 
 public class PrecioTest {
     @Test
     void precioConMontoNegativoDebeLanzarReglaDominioException() {
-
         //Arrange
         BigDecimal montoNegativo = new BigDecimal("-1");
 
@@ -20,7 +18,6 @@ public class PrecioTest {
     }
     @Test
     void precioLanzaReglaDominioExceptionAnteMontoNull() {
-
         //Arrange
         BigDecimal montoNulo = null;
 
@@ -29,7 +26,6 @@ public class PrecioTest {
     }
     @Test
     void precioLanzaReglaDominioExceptionAnteMonedaVacia() {
-
         //Arrange
         BigDecimal montoMelo = new BigDecimal(150000);
 
@@ -38,7 +34,6 @@ public class PrecioTest {
     }
     @Test
     void impideSumasMonedasDistintas() {
-
         //Arrange
         BigDecimal monto1 = new BigDecimal(10000);
         BigDecimal monto2 = new BigDecimal(5000);
@@ -50,7 +45,6 @@ public class PrecioTest {
     }
     @Test
     void monedaEnMinusculaSirve() {
-
         //Arrange
         BigDecimal monto1 = new BigDecimal(5000);
         BigDecimal monto2 = new BigDecimal(5000);

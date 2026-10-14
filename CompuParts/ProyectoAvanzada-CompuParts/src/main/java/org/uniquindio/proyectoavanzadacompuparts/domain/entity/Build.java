@@ -7,6 +7,7 @@ import org.uniquindio.proyectoavanzadacompuparts.domain.valueobject.EstadoBuild;
 
 import java.util.*;
 
+import static java.util.Arrays.stream;
 import static org.uniquindio.proyectoavanzadacompuparts.domain.exception.ReglaDominioException.exigir;
 
 /**
@@ -59,6 +60,10 @@ public class Build {
             throw new ReglaDominioException("El Build no puede validarse sin componentes");
         }
 
+        if (this.estado == EstadoBuild.LISTO_PARA_COMPRA) {
+            return;
+        }
+
         int consumoTotal = componentes.stream()
                 .filter(c -> c.getCategoria() != CategoriaComponente.PSU)
                 .mapToInt(c -> c.getEspecificacion().wattajeRequerido())
@@ -71,6 +76,7 @@ public class Build {
                 .orElseThrow(() -> new ReglaDominioException("El Build necesita una PSU para validarse"));
 
         if (wattajePsu < consumoTotal) {
+            this.estado = EstadoBuild.INCOMPATIBLE;
             throw new ReglaDominioException(
                     "La PSU del Build tiene un wattaje insuficiente: "
                             + wattajePsu + "W para un consumo de "
@@ -78,12 +84,7 @@ public class Build {
             );
         }
 
-        boolean incompatibilidadSocket = componentes.stream()
-                .filter(c -> c.getCategoria() == CategoriaComponente.CPU || c.getCategoria() == CategoriaComponente.MOTHERBOARD)
-                .map(Componente::getEspecificacion)
-                .map(especificacion -> especificacion.socket())
-                .distinct()
-                .count() > 1;
+        boolean incompatibilidadSocket = socketCompatibilidad();
 
         if (incompatibilidadSocket) {
             this.estado = EstadoBuild.INCOMPATIBLE; // Al fallar el build su estado se establece como INCOMPATIBLE
@@ -91,6 +92,15 @@ public class Build {
         }
 
         this.estado = EstadoBuild.EN_CONSTRUCCION;
+    }
+
+    public boolean socketCompatibilidad() {
+        return componentes.stream()
+                .filter(c -> c.getCategoria() == CategoriaComponente.CPU || c.getCategoria() == CategoriaComponente.MOTHERBOARD)
+                .map(Componente::getEspecificacion)
+                .map(especificacion -> especificacion.socket())
+                .distinct()
+                .count() > 1;
     }
 
     public void marcarComoListoParaCompra() {

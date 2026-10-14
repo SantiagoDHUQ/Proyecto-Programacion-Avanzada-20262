@@ -68,7 +68,7 @@ public class Componente {
      * Invariante del agregado: un Componente solo puede pasar a PREVENTA si tiene fecha estimada.
      */
     public void pasarAPreventa(LocalDate fechaEstimadaLlegada) {
-        if (fechaEstimadaLlegada == null) {
+        if (fechaEstimadaLlegada == null || fechaEstimadaLlegada.isBefore(LocalDate.now())) {
             throw new ReglaDominioException("Un componente en preventa debe tener fecha estimada de llegada");
         }
         if (vendedor.esParticular()) {

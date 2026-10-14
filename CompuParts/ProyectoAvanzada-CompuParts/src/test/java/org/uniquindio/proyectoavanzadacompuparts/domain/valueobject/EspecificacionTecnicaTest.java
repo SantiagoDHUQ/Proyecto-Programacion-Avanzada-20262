@@ -3,13 +3,11 @@ package org.uniquindio.proyectoavanzadacompuparts.domain.valueobject;
 import org.junit.jupiter.api.Test;
 import org.uniquindio.proyectoavanzadacompuparts.domain.exception.ReglaDominioException;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.*;
 
 public class EspecificacionTecnicaTest {
     @Test
     void dosEspecificacionesConMismosValoresDebenSerIguales(){
-
         //Arrange
         EspecificacionTecnica espTec1 = new EspecificacionTecnica("AW3",
                 120, "DDR5");
@@ -22,7 +20,6 @@ public class EspecificacionTecnicaTest {
 
     @Test
     void especificacionConWattajeNegativoDebeLanzarReglaDominioException() {
-
         //Arrange
         String socket = "AM5";
         int wattaje = -100;
@@ -36,7 +33,6 @@ public class EspecificacionTecnicaTest {
     }
     @Test
     void especificacionSinSocketLanzaReglaDominioException() {
-
         //Arrange
         String socket = null;
         int wattaje = 100;
@@ -50,7 +46,6 @@ public class EspecificacionTecnicaTest {
     }
     @Test
     void especificacionSinTipoMemoriaLanzaReglaDominioException() {
-
         //Arrange
         String socket = "AM5";
         int wattaje = 120;
