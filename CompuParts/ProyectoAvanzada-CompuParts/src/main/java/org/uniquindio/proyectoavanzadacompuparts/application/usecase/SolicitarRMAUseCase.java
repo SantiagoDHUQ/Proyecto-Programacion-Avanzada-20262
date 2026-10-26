@@ -56,12 +56,9 @@ public class SolicitarRMAUseCase {
                 .orElseThrow(() -> new RecursoNoEncontradoException(
                         "No existe una Compra con ese identificador"));
 
-        if (compra.getEstado() != EstadoCompra.COMPLETADA) {
-            throw new ReglaDominioException("Solo se puede solicitar RMA de una compra completada");
-        }
-        if (!compra.getCompradorId().equals(request.compradorId())) {
-            throw new ReglaDominioException("Solo el comprador de la compra puede solicitar el RMA");
-        }
+        // El dominio valida las reglas de negocio
+        compra.validarParaSolicitarRMA(request.compradorId());
+        compra.validarNumeroSeriePertenece(request.numeroSerie());
 
         String numeroSerie = request.numeroSerie().trim();
         ItemCompra item = compra.getItems().stream()
@@ -80,9 +77,7 @@ public class SolicitarRMAUseCase {
 
         // El dominio valida el estado de la unidad
         UnidadInventario unidad = componente.unidadPorId(item.unidadId());
-        if (!unidad.estaVendida()) {
-            throw new ReglaDominioException("La unidad no está vendida y no puede entrar en RMA");
-        }
+        unidad.validarEstaVendida();
 
         LocalDate fechaCompra = compra.getFechaCompra().toLocalDate();
         LocalDate fechaSolicitud = request.fechaSolicitud() == null

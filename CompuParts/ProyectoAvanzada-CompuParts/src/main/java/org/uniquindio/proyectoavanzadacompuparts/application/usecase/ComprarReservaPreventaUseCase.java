@@ -12,11 +12,9 @@ import org.uniquindio.proyectoavanzadacompuparts.domain.exception.ReglaDominioEx
 import org.uniquindio.proyectoavanzadacompuparts.domain.repository.CompraRepository;
 import org.uniquindio.proyectoavanzadacompuparts.domain.repository.ComponenteRepository;
 import org.uniquindio.proyectoavanzadacompuparts.domain.repository.ReservaPreventaRepository;
-import org.uniquindio.proyectoavanzadacompuparts.domain.valueobject.EstadoUnidad;
 import org.uniquindio.proyectoavanzadacompuparts.domain.valueobject.ItemCompra;
 
 import java.util.List;
-import java.util.Objects;
 import java.util.UUID;
 
 /**
@@ -27,6 +25,8 @@ import java.util.UUID;
  * reserva pasa a EN_COMPRA y queda enlazada con la compra PENDIENTE; si la compra
  * se cancela, la reserva vuelve a ACTIVA y la unidad sigue apartada.</p>
  */
+@Service
+@RequiredArgsConstructor
 public class ComprarReservaPreventaUseCase {
 
     private final ComponenteRepository componenteRepository;
