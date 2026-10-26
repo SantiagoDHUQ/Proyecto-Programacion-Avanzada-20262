@@ -1,5 +1,8 @@
 package org.uniquindio.proyectoavanzadacompuparts.application.usecase;
 
+import lombok.RequiredArgsConstructor;
+import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 import org.uniquindio.proyectoavanzadacompuparts.application.exception.RecursoNoEncontradoException;
 import org.uniquindio.proyectoavanzadacompuparts.domain.entity.Build;
 import org.uniquindio.proyectoavanzadacompuparts.domain.entity.Componente;
@@ -13,16 +16,14 @@ import java.util.UUID;
  * Caso de uso que añade un Componente al Build indicado.
  * Requiere BuildRepository y ComponenteRepository para consultar ambos agregados.
  */
+@Service
+@RequiredArgsConstructor
 public class AgregarComponenteABuildUseCase {
 
     private final BuildRepository buildRepository;
     private final ComponenteRepository componenteRepository;
 
-    public AgregarComponenteABuildUseCase(BuildRepository buildRepository, ComponenteRepository componenteRepository) {
-        this.buildRepository = Objects.requireNonNull(buildRepository, "El repositorio de builds no puede ser nulo");
-        this.componenteRepository = Objects.requireNonNull(componenteRepository, "El repositorio de componentes no puede ser nulo");
-    }
-
+    @Transactional
     public Build ejecutar(UUID buildId, String componenteId) {
         Build build = buildRepository.buscarPorId(buildId)
                 .orElseThrow(() -> new RecursoNoEncontradoException("No existe un Build con ese identificador"));

@@ -47,7 +47,8 @@ public class Componente {
 
     private Componente(String id, String nombre, CategoriaComponente categoria,
                        EspecificacionTecnica especificacion, Precio precio, Vendedor vendedor,
-                       Garantia garantia) {
+                       Garantia garantia, List<UnidadInventario> unidades,
+                       EstadoComercial estadoComercial) {
         this.id = id;
         this.nombre = nombre;
         this.categoria = categoria;
@@ -55,8 +56,8 @@ public class Componente {
         this.precio = precio;
         this.vendedor = vendedor;
         this.garantia = garantia;
-        this.unidades = new ArrayList<>();
-        this.estadoComercial = EstadoComercial.PUBLICADO;
+        this.unidades = unidades == null ? new ArrayList<>() : new ArrayList<>(unidades);
+        this.estadoComercial = estadoComercial == null ? EstadoComercial.PUBLICADO : estadoComercial;
     }
 
     public static Componente crear(String id, String nombre, CategoriaComponente categoria,
@@ -74,7 +75,23 @@ public class Componente {
         exigir(!(vendedor.esParticular() && conGarantia), "Un componente de segunda mano no tiene garantía");
 
         Garantia garantia = conGarantia ? new Garantia(duracionGarantia) : null;
-        return new Componente(id, nombre, categoria, especificacion, precio, vendedor, garantia);
+        return new Componente(id, nombre, categoria, especificacion, precio, vendedor, garantia,
+                new ArrayList<>(), EstadoComercial.PUBLICADO);
+    }
+
+    public static Componente reconstruir(String id, String nombre, CategoriaComponente categoria,
+                                         EspecificacionTecnica especificacion, Precio precio, Vendedor vendedor,
+                                         Garantia garantia, List<UnidadInventario> unidades,
+                                         EstadoComercial estadoComercial) {
+        exigir(id != null && !id.isBlank(), "El identificador del componente es obligatorio");
+        exigir(nombre != null && !nombre.isBlank(), "El nombre del componente no puede estar vacío");
+        exigir(categoria != null, "La categoría es obligatoria");
+        exigir(especificacion != null, "La especificación es obligatoria");
+        exigir(precio != null, "El precio es obligatorio");
+        exigir(vendedor != null, "El vendedor es obligatorio");
+        exigir(estadoComercial != null, "El estado comercial es obligatorio");
+        return new Componente(id, nombre, categoria, especificacion, precio, vendedor, garantia,
+                unidades, estadoComercial);
     }
 
     // ---------- Unidades de inventario ----------

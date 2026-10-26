@@ -1,5 +1,8 @@
 package org.uniquindio.proyectoavanzadacompuparts.application.usecase;
 
+import lombok.RequiredArgsConstructor;
+import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 import org.uniquindio.proyectoavanzadacompuparts.application.exception.RecursoNoEncontradoException;
 import org.uniquindio.proyectoavanzadacompuparts.domain.entity.Build;
 import org.uniquindio.proyectoavanzadacompuparts.domain.entity.Componente;
@@ -16,16 +19,14 @@ import java.util.Objects;
  * vendedor solo puede marcarlo como agotado (regla 6). El borrado es lógico para
  * conservar el historial de compras, RMA y unidades.</p>
  */
+@Service
+@RequiredArgsConstructor
 public class EliminarComponenteUseCase {
 
     private final ComponenteRepository componenteRepository;
     private final BuildRepository buildRepository;
 
-    public EliminarComponenteUseCase(ComponenteRepository componenteRepository, BuildRepository buildRepository) {
-        this.componenteRepository = Objects.requireNonNull(componenteRepository);
-        this.buildRepository = Objects.requireNonNull(buildRepository);
-    }
-
+    @Transactional
     public void ejecutar(String componenteId, String vendedorId) {
         Componente componente = componenteRepository.buscarPorId(componenteId)
                 .orElseThrow(() -> new RecursoNoEncontradoException("No existe un Componente con ese identificador"));

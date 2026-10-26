@@ -1,20 +1,19 @@
 package org.uniquindio.proyectoavanzadacompuparts.application.usecase;
 
+import lombok.RequiredArgsConstructor;
+import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 import org.uniquindio.proyectoavanzadacompuparts.application.exception.RecursoNoEncontradoException;
 import org.uniquindio.proyectoavanzadacompuparts.domain.entity.Compra;
 import org.uniquindio.proyectoavanzadacompuparts.domain.entity.Componente;
-import org.uniquindio.proyectoavanzadacompuparts.domain.entity.UnidadInventario;
 import org.uniquindio.proyectoavanzadacompuparts.domain.exception.ReglaDominioException;
 import org.uniquindio.proyectoavanzadacompuparts.domain.repository.CompraRepository;
 import org.uniquindio.proyectoavanzadacompuparts.domain.repository.ComponenteRepository;
 import org.uniquindio.proyectoavanzadacompuparts.domain.repository.SolicitudRMARepository;
-import org.uniquindio.proyectoavanzadacompuparts.domain.valueobject.EstadoCompra;
-import org.uniquindio.proyectoavanzadacompuparts.domain.valueobject.EstadoUnidad;
 import org.uniquindio.proyectoavanzadacompuparts.domain.valueobject.ItemCompra;
 
 import java.util.LinkedHashMap;
 import java.util.Map;
-import java.util.Objects;
 
 /**
  * Caso de uso, del lado del comprador, que reembolsa una compra completada
@@ -24,34 +23,22 @@ import java.util.Objects;
  * {@code DESCARTADA}. Se valida todo antes de cambiar cualquier estado para no
  * dejar una compra reembolsada a medias.</p>
  */
+@Service
+@RequiredArgsConstructor
 public class ReembolsarCompraUseCase {
 
     private final CompraRepository compraRepository;
     private final ComponenteRepository componenteRepository;
     private final SolicitudRMARepository solicitudRMARepository;
 
-    public ReembolsarCompraUseCase(CompraRepository compraRepository,
-                                   ComponenteRepository componenteRepository,
-                                   SolicitudRMARepository solicitudRMARepository) {
-        this.compraRepository = Objects.requireNonNull(compraRepository);
-        this.componenteRepository = Objects.requireNonNull(componenteRepository);
-        this.solicitudRMARepository = Objects.requireNonNull(solicitudRMARepository);
-    }
-
+    @Transactional
     public Compra ejecutar(String compraId, String compradorId, String motivo) {
         Compra compra = compraRepository.buscarPorId(compraId)
                 .orElseThrow(() -> new RecursoNoEncontradoException(
                         "No existe una Compra con ese identificador"));
 
-        if (compra.getEstado() != EstadoCompra.COMPLETADA) {
-            throw new ReglaDominioException("Solo se puede reembolsar una compra completada");
-        }
-        if (compradorId == null || !compra.getCompradorId().equals(compradorId)) {
-            throw new ReglaDominioException("Solo el comprador de la compra puede solicitar el reembolso");
-        }
-        if (motivo == null || motivo.isBlank()) {
-            throw new ReglaDominioException("El reembolso exige indicar un motivo");
-        }
+        // El dominio valida la transición
+        compra.validarReembolso(compradorId, motivo);
 
         Map<String, Componente> componentes = new LinkedHashMap<>();
 
@@ -62,11 +49,10 @@ public class ReembolsarCompraUseCase {
                             "No existe un Componente con ese identificador"));
             componentes.put(componente.getId(), componente);
 
-            UnidadInventario unidad = componente.unidadPorId(item.unidadId());
-            if (unidad.getEstado() != EstadoUnidad.EN_RMA) {
-                throw new ReglaDominioException("La unidad " + item.numeroSerie()
-                        + " no está en RMA; primero debe aceptarse su solicitud");
-            }
+            // El dominio valida el estado de la unidad
+            componente.unidadPorId(item.unidadId()).validarEstaEnRMA();
+
+            // Verifica que no haya RMA pendiente y que exista RMA aceptada
             if (solicitudRMARepository.existePendientePorNumeroSerie(item.numeroSerie())) {
                 throw new ReglaDominioException("La unidad " + item.numeroSerie()
                         + " tiene una SolicitudRMA pendiente");

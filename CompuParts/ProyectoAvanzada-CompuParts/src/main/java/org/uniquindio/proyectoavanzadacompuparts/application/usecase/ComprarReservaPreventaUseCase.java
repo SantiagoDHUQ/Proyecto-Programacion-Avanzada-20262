@@ -1,5 +1,8 @@
 package org.uniquindio.proyectoavanzadacompuparts.application.usecase;
 
+import lombok.RequiredArgsConstructor;
+import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 import org.uniquindio.proyectoavanzadacompuparts.application.exception.RecursoNoEncontradoException;
 import org.uniquindio.proyectoavanzadacompuparts.domain.entity.Compra;
 import org.uniquindio.proyectoavanzadacompuparts.domain.entity.Componente;
@@ -30,38 +33,26 @@ public class ComprarReservaPreventaUseCase {
     private final ReservaPreventaRepository reservaPreventaRepository;
     private final CompraRepository compraRepository;
 
-    public ComprarReservaPreventaUseCase(ComponenteRepository componenteRepository,
-                                         ReservaPreventaRepository reservaPreventaRepository,
-                                         CompraRepository compraRepository) {
-        this.componenteRepository = Objects.requireNonNull(componenteRepository);
-        this.reservaPreventaRepository = Objects.requireNonNull(reservaPreventaRepository);
-        this.compraRepository = Objects.requireNonNull(compraRepository);
-    }
-
+    @Transactional
     public Compra ejecutar(UUID reservaId, String compradorId) {
         ReservaPreventa reserva = reservaPreventaRepository.buscarPorId(reservaId)
                 .orElseThrow(() -> new RecursoNoEncontradoException("No existe una reserva de preventa con ese identificador"));
 
+        // Validación de propiedad: solo el comprador que reservó puede comprar
         if (!reserva.getCompradorId().equals(compradorId)) {
             throw new ReglaDominioException("Solo el comprador que reservó puede comprar esta unidad");
         }
-        if (reserva.estaEnCompra()) {
-            throw new ReglaDominioException("La reserva ya tiene una compra pendiente");
-        }
-        if (!reserva.estaActiva()) {
-            throw new ReglaDominioException("La reserva de preventa no está activa");
-        }
+
+        // El dominio valida la transición
+        reserva.validarIniciarCompra();
 
         Componente componente = componenteRepository.buscarPorId(reserva.getComponenteId())
                 .orElseThrow(() -> new RecursoNoEncontradoException("No existe un Componente con ese identificador"));
         UnidadInventario unidad = componente.unidadPorId(reserva.getUnidadId());
 
-        if (unidad.getEstado() != EstadoUnidad.RESERVADA) {
-            throw new ReglaDominioException("La unidad aún no ha llegado o ya no está reservada para el comprador");
-        }
-        if (!reserva.getId().equals(unidad.getReservaPreventaId())) {
-            throw new ReglaDominioException("La unidad no está reservada por esta preventa");
-        }
+        // El dominio valida el estado de la unidad para compra de reserva de preventa
+        unidad.validarParaComprarReservaPreventa();
+        unidad.validarReservaPreventaCoincide(reserva.getId());
 
         ItemCompra item = new ItemCompra(
                 unidad.getId(),

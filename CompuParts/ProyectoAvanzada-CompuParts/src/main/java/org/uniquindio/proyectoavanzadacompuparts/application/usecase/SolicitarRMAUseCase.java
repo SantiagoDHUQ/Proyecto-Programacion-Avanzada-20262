@@ -1,5 +1,8 @@
 package org.uniquindio.proyectoavanzadacompuparts.application.usecase;
 
+import lombok.RequiredArgsConstructor;
+import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 import org.uniquindio.proyectoavanzadacompuparts.application.dto.request.SolicitarRMARequest;
 import org.uniquindio.proyectoavanzadacompuparts.application.exception.RecursoNoEncontradoException;
 import org.uniquindio.proyectoavanzadacompuparts.domain.entity.Compra;
@@ -10,7 +13,6 @@ import org.uniquindio.proyectoavanzadacompuparts.domain.exception.ReglaDominioEx
 import org.uniquindio.proyectoavanzadacompuparts.domain.repository.ComponenteRepository;
 import org.uniquindio.proyectoavanzadacompuparts.domain.repository.CompraRepository;
 import org.uniquindio.proyectoavanzadacompuparts.domain.repository.SolicitudRMARepository;
-import org.uniquindio.proyectoavanzadacompuparts.domain.valueobject.EstadoCompra;
 import org.uniquindio.proyectoavanzadacompuparts.domain.valueobject.ItemCompra;
 
 import java.time.LocalDate;
@@ -26,20 +28,15 @@ import static org.uniquindio.proyectoavanzadacompuparts.domain.exception.ReglaDo
  * la unidad pasa a {@code EN_RMA} para que no vuelva a venderse mientras el
  * vendedor dueño resuelve la solicitud.</p>
  */
+@Service
+@RequiredArgsConstructor
 public class SolicitarRMAUseCase {
 
     private final CompraRepository compraRepository;
     private final ComponenteRepository componenteRepository;
     private final SolicitudRMARepository solicitudRMARepository;
 
-    public SolicitarRMAUseCase(CompraRepository compraRepository,
-                               ComponenteRepository componenteRepository,
-                               SolicitudRMARepository solicitudRMARepository) {
-        this.compraRepository = Objects.requireNonNull(compraRepository);
-        this.componenteRepository = Objects.requireNonNull(componenteRepository);
-        this.solicitudRMARepository = Objects.requireNonNull(solicitudRMARepository);
-    }
-
+    @Transactional
     public SolicitudRMA ejecutar(SolicitarRMARequest request) {
         exigir(request != null, "La solicitud RMA es obligatoria");
         exigir(request.id() != null && !request.id().isBlank(),
@@ -81,6 +78,7 @@ public class SolicitarRMAUseCase {
             throw new ReglaDominioException("Ya existe una SolicitudRMA pendiente para esa unidad");
         }
 
+        // El dominio valida el estado de la unidad
         UnidadInventario unidad = componente.unidadPorId(item.unidadId());
         if (!unidad.estaVendida()) {
             throw new ReglaDominioException("La unidad no está vendida y no puede entrar en RMA");

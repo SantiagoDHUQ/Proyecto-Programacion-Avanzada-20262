@@ -36,6 +36,17 @@ public class Vendedor {
         return new Vendedor(id, nombre, convertirTipo(tipo));
     }
 
+    public static Vendedor reconstruir(String id, String nombre, String tipo) {
+        return new Vendedor(id, nombre, convertirTipo(tipo));
+    }
+
+    public static Vendedor reconstruir(String id, String nombre, TipoVendedor tipo) {
+        exigir(id != null && !id.isBlank(), "El identificador no puede estar vacío");
+        exigir(nombre != null && !nombre.isBlank(), "El nombre no puede estar vacío");
+        exigir(tipo != null, "El tipo no puede estar vacío");
+        return new Vendedor(id, nombre, tipo);
+    }
+
     //valueOf lanza una excepción diferente, se atrapa para que se comporte como una ReglaDominioException
     private static TipoVendedor convertirTipo(String tipo) {
         exigir(tipo != null && !tipo.isBlank(), "El tipo del vendedor es obligatorio");

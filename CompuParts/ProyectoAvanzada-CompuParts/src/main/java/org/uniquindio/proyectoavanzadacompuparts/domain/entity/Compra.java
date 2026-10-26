@@ -43,14 +43,15 @@ public class Compra {
     private final LocalDateTime fechaCompra;
     private EstadoCompra estado;
 
-    private Compra(String id, UUID buildId, String compradorId, List<ItemCompra> items) {
+    private Compra(String id, UUID buildId, String compradorId, List<ItemCompra> items,
+                   Precio precioCongelado, LocalDateTime fechaCompra, EstadoCompra estado) {
         this.id = id;
         this.buildId = buildId;
         this.compradorId = compradorId;
-        this.items = List.copyOf(items);
-        this.precioCongelado = calcularTotal(this.items);
-        this.fechaCompra = LocalDateTime.now();
-        this.estado = EstadoCompra.PENDIENTE;
+        this.items = items == null ? List.of() : List.copyOf(items);
+        this.precioCongelado = precioCongelado;
+        this.fechaCompra = fechaCompra;
+        this.estado = estado;
     }
 
     public static Compra realizar(String id, UUID buildId, String compradorId, List<ItemCompra> items) {
@@ -66,7 +67,22 @@ public class Compra {
         exigir(unidadesDistintas == items.size(),
                 "Una compra no puede incluir dos veces la misma unidad");
 
-        return new Compra(id, buildId, compradorId, items);
+        List<ItemCompra> itemsCopia = List.copyOf(items);
+        Precio precioCongelado = calcularTotal(itemsCopia);
+        return new Compra(id, buildId, compradorId, itemsCopia, precioCongelado,
+                LocalDateTime.now(), EstadoCompra.PENDIENTE);
+    }
+
+    public static Compra reconstruir(String id, UUID buildId, String compradorId,
+                                     List<ItemCompra> items, Precio precioCongelado,
+                                     LocalDateTime fechaCompra, EstadoCompra estado) {
+        exigir(id != null && !id.isBlank(), "El identificador de la compra es obligatorio");
+        exigir(compradorId != null && !compradorId.isBlank(), "La compra debe indicar el comprador");
+        exigir(items != null && !items.isEmpty(), "La compra debe tener al menos un ítem");
+        exigir(precioCongelado != null, "El precio congelado es obligatorio");
+        exigir(fechaCompra != null, "La fecha de compra es obligatoria");
+        exigir(estado != null, "El estado de la compra es obligatorio");
+        return new Compra(id, buildId, compradorId, items, precioCongelado, fechaCompra, estado);
     }
 
     private static Precio calcularTotal(List<ItemCompra> items) {
@@ -78,10 +94,23 @@ public class Compra {
 
     // ---------- Ciclo de vida ----------
 
+    /**
+     * Confirma la compra: pasa de PENDIENTE a COMPLETADA.
+     * Valida que la compra esté en estado PENDIENTE.
+     */
     public void confirmar() {
+        validarConfirmar();
         verificarQueNoEsteFinal();
         verificarTransicion(EstadoCompra.COMPLETADA);
         this.estado = EstadoCompra.COMPLETADA;
+    }
+
+    /**
+     * Valida que la compra pueda ser confirmada.
+     * Lanza ReglaDominioException si no se cumple la invariante.
+     */
+    public void validarConfirmar() {
+        exigir(this.estado == EstadoCompra.PENDIENTE, "Solo se puede confirmar una compra pendiente");
     }
 
     /**
@@ -89,21 +118,58 @@ public class Compra {
      * las unidades reservadas; el agregado solo conoce su propio estado.
      */
     public void cancelar() {
+        validarCancelar();
         verificarQueNoEsteFinal();
         verificarTransicion(EstadoCompra.CANCELADA);
         this.estado = EstadoCompra.CANCELADA;
     }
 
+    /**
+     * Valida que la compra pueda ser cancelada.
+     * Lanza ReglaDominioException si no se cumple la invariante.
+     */
+    public void validarCancelar() {
+        exigir(this.estado == EstadoCompra.PENDIENTE, "Solo se puede cancelar una compra pendiente");
+    }
+
+    /**
+     * Solicita el reembolso de una compra completada.
+     * Valida que se proporcione un motivo (la validación de estado y comprador
+     * debe hacerse antes llamando a validarReembolso).
+     */
     public void solicitarReembolso(String motivo) {
+        exigir(motivo != null && !motivo.isBlank(), "El reembolso exige indicar un motivo");
         verificarQueNoEsteFinal();
-        if (this.estado != EstadoCompra.COMPLETADA) {
-            throw new ReglaDominioException("Solo se puede reembolsar una compra completada");
-        }
-        if (motivo == null || motivo.isBlank()) {
-            throw new ReglaDominioException("El reembolso exige indicar un motivo");
-        }
         verificarTransicion(EstadoCompra.REEMBOLSADA);
         this.estado = EstadoCompra.REEMBOLSADA;
+    }
+
+    /**
+     * Valida que la compra pueda ser reembolsada.
+     * Lanza ReglaDominioException si no se cumple la invariante.
+     */
+    public void validarReembolso(String compradorId, String motivo) {
+        exigir(this.estado == EstadoCompra.COMPLETADA, "Solo se puede reembolsar una compra completada");
+        exigir(this.compradorId.equals(compradorId), "Solo el comprador de la compra puede solicitar el reembolso");
+        exigir(motivo != null && !motivo.isBlank(), "El reembolso exige indicar un motivo");
+    }
+
+    /**
+     * Verifica que el número de serie pertenezca a esta compra.
+     */
+    public void validarNumeroSeriePertenece(String numeroSerie) {
+        boolean pertenece = items.stream()
+                .anyMatch(item -> item.numeroSerie().equalsIgnoreCase(numeroSerie.trim()));
+        exigir(pertenece, "El número de serie no pertenece a la compra");
+    }
+
+    /**
+     * Valida que la compra pueda ser usada para solicitar una RMA.
+     * La compra debe estar COMPLETADA y el comprador debe coincidir.
+     */
+    public void validarParaSolicitarRMA(String compradorId) {
+        exigir(this.estado == EstadoCompra.COMPLETADA, "Solo se puede solicitar RMA de una compra completada");
+        exigir(this.compradorId.equals(compradorId), "Solo el comprador de la compra puede solicitar el RMA");
     }
 
     // ---------- Verificaciones internas ----------

@@ -1,23 +1,21 @@
 package org.uniquindio.proyectoavanzadacompuparts.application.usecase;
 
+import lombok.RequiredArgsConstructor;
+import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 import org.uniquindio.proyectoavanzadacompuparts.application.exception.RecursoNoEncontradoException;
 import org.uniquindio.proyectoavanzadacompuparts.domain.entity.Build;
 import org.uniquindio.proyectoavanzadacompuparts.domain.entity.Compra;
 import org.uniquindio.proyectoavanzadacompuparts.domain.entity.Componente;
 import org.uniquindio.proyectoavanzadacompuparts.domain.entity.ReservaPreventa;
-import org.uniquindio.proyectoavanzadacompuparts.domain.entity.UnidadInventario;
-import org.uniquindio.proyectoavanzadacompuparts.domain.exception.ReglaDominioException;
 import org.uniquindio.proyectoavanzadacompuparts.domain.repository.BuildRepository;
 import org.uniquindio.proyectoavanzadacompuparts.domain.repository.CompraRepository;
 import org.uniquindio.proyectoavanzadacompuparts.domain.repository.ComponenteRepository;
 import org.uniquindio.proyectoavanzadacompuparts.domain.repository.ReservaPreventaRepository;
-import org.uniquindio.proyectoavanzadacompuparts.domain.valueobject.EstadoBuild;
-import org.uniquindio.proyectoavanzadacompuparts.domain.valueobject.EstadoCompra;
 import org.uniquindio.proyectoavanzadacompuparts.domain.valueobject.ItemCompra;
 
 import java.util.LinkedHashMap;
 import java.util.Map;
-import java.util.Objects;
 
 /**
  * Caso de uso que confirma una compra pendiente.
@@ -26,6 +24,8 @@ import java.util.Objects;
  * el Build queda COMPRADO. Primero valida todas las unidades para no dejar una
  * compra a medio confirmar.</p>
  */
+@Service
+@RequiredArgsConstructor
 public class ConfirmarCompraUseCase {
 
     private final CompraRepository compraRepository;
@@ -33,31 +33,20 @@ public class ConfirmarCompraUseCase {
     private final BuildRepository buildRepository;
     private final ReservaPreventaRepository reservaPreventaRepository;
 
-    public ConfirmarCompraUseCase(CompraRepository compraRepository,
-                                  ComponenteRepository componenteRepository,
-                                  BuildRepository buildRepository,
-                                  ReservaPreventaRepository reservaPreventaRepository) {
-        this.compraRepository = Objects.requireNonNull(compraRepository);
-        this.componenteRepository = Objects.requireNonNull(componenteRepository);
-        this.buildRepository = Objects.requireNonNull(buildRepository);
-        this.reservaPreventaRepository = Objects.requireNonNull(reservaPreventaRepository);
-    }
-
+    @Transactional
     public Compra ejecutar(String compraId) {
         Compra compra = compraRepository.buscarPorId(compraId)
                 .orElseThrow(() -> new RecursoNoEncontradoException("No existe una Compra con ese identificador"));
 
-        if (compra.getEstado() != EstadoCompra.PENDIENTE) {
-            throw new ReglaDominioException("Solo se puede confirmar una compra pendiente");
-        }
+        // El dominio valida la transición
+        compra.validarConfirmar();
 
         Build build = null;
         if (compra.getBuildId() != null) {
             build = buildRepository.buscarPorId(compra.getBuildId())
                     .orElseThrow(() -> new RecursoNoEncontradoException("No existe el Build de la compra"));
-            if (build.getEstado() != EstadoBuild.LISTO_PARA_COMPRA) {
-                throw new ReglaDominioException("El Build de la compra no está listo para compra");
-            }
+            // El dominio valida el estado del build
+            build.validarListoParaComprar();
         }
 
         Map<String, Componente> componentes = new LinkedHashMap<>();
@@ -66,10 +55,8 @@ public class ConfirmarCompraUseCase {
         for (ItemCompra item : compra.getItems()) {
             Componente componente = buscarComponente(item.componenteId());
             componentes.put(componente.getId(), componente);
-            UnidadInventario unidad = componente.unidadPorId(item.unidadId());
-            if (!unidad.estaReservada()) {
-                throw new ReglaDominioException("La unidad " + item.numeroSerie() + " no está reservada para esta compra");
-            }
+            // El dominio valida el estado de la unidad
+            componente.unidadPorId(item.unidadId()).validarEstaReservada();
         }
 
         for (ItemCompra item : compra.getItems()) {

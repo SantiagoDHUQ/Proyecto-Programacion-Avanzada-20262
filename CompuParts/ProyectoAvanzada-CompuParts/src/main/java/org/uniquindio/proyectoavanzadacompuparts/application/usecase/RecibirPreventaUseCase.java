@@ -1,5 +1,8 @@
 package org.uniquindio.proyectoavanzadacompuparts.application.usecase;
 
+import lombok.RequiredArgsConstructor;
+import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 import org.uniquindio.proyectoavanzadacompuparts.application.exception.RecursoNoEncontradoException;
 import org.uniquindio.proyectoavanzadacompuparts.domain.entity.Componente;
 import org.uniquindio.proyectoavanzadacompuparts.domain.exception.ReglaDominioException;
@@ -15,14 +18,13 @@ import java.util.UUID;
  * <p>Si la unidad estaba reservada por un comprador, queda RESERVADA para él;
  * si no, queda DISPONIBLE.</p>
  */
+@Service
+@RequiredArgsConstructor
 public class RecibirPreventaUseCase {
 
     private final ComponenteRepository componenteRepository;
 
-    public RecibirPreventaUseCase(ComponenteRepository componenteRepository) {
-        this.componenteRepository = Objects.requireNonNull(componenteRepository);
-    }
-
+    @Transactional
     public Componente ejecutar(String componenteId, UUID unidadId, String vendedorId, String numeroSerie) {
         Componente componente = componenteRepository.buscarPorId(componenteId)
                 .orElseThrow(() -> new RecursoNoEncontradoException("No existe un Componente con ese identificador"));

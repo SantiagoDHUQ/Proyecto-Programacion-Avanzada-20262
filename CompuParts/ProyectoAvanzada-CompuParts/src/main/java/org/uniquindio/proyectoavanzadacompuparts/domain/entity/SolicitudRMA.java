@@ -7,6 +7,8 @@ import org.uniquindio.proyectoavanzadacompuparts.domain.valueobject.EstadoSolici
 import java.time.LocalDate;
 import java.util.Objects;
 
+import static org.uniquindio.proyectoavanzadacompuparts.domain.exception.ReglaDominioException.exigir;
+
 /**
  * Solicitud de garantía asociada a un Componente con falla de fábrica y en vigencia.
  * 
@@ -32,16 +34,17 @@ public class SolicitudRMA {
 
     private SolicitudRMA(String id, String componenteId, String compraId, String numeroSerie,
                          String compradorId, LocalDate fechaCompra, int duracionGarantia,
-                         LocalDate fechaSolicitud) {
+                         LocalDate fechaSolicitud, EstadoSolicitudRMA estado, String motivoRechazo) {
         this.id = id;
         this.componenteId = componenteId;
         this.compraId = compraId;
-        this.numeroSerie = numeroSerie.trim();
+        this.numeroSerie = numeroSerie == null ? null : numeroSerie.trim();
         this.compradorId = compradorId;
         this.fechaCompra = fechaCompra;
         this.duracionGarantia = duracionGarantia;
         this.fechaSolicitud = fechaSolicitud;
-        this.estado = EstadoSolicitudRMA.PENDIENTE; // toda solicitud nace Pendiente
+        this.estado = estado == null ? EstadoSolicitudRMA.PENDIENTE : estado;
+        this.motivoRechazo = motivoRechazo;
     }
 
     // Único punto de entrada: valida ANTES de existir
@@ -70,23 +73,68 @@ public class SolicitudRMA {
             throw new ReglaDominioException("La SolicitudRMA no puede crearse después del vencimiento de la garantía");
         }
         return new SolicitudRMA(id, componenteId, compraId, numeroSerie, compradorId,
-                fechaCompra, duracionGarantia, fechaSolicitud);
+                fechaCompra, duracionGarantia, fechaSolicitud, EstadoSolicitudRMA.PENDIENTE, null);
+    }
+
+    public static SolicitudRMA reconstruir(String id, String componenteId, String compraId,
+                                           String numeroSerie, String compradorId,
+                                           LocalDate fechaCompra, int duracionGarantia,
+                                           LocalDate fechaSolicitud, EstadoSolicitudRMA estado,
+                                           String motivoRechazo) {
+        exigirTexto(id, "El identificador de la SolicitudRMA es obligatorio");
+        exigirTexto(componenteId, "La SolicitudRMA debe indicar el componente");
+        exigirTexto(compraId, "La SolicitudRMA debe indicar la compra");
+        exigirTexto(numeroSerie, "La SolicitudRMA debe indicar el número de serie de la unidad");
+        exigirTexto(compradorId, "La SolicitudRMA debe indicar el comprador");
+        if (fechaCompra == null) {
+            throw new ReglaDominioException("La fecha de compra es obligatoria");
+        }
+        if (fechaSolicitud == null) {
+            throw new ReglaDominioException("La fecha de la solicitud es obligatoria");
+        }
+        if (estado == null) {
+            throw new ReglaDominioException("El estado de la SolicitudRMA es obligatorio");
+        }
+        return new SolicitudRMA(id, componenteId, compraId, numeroSerie, compradorId,
+                fechaCompra, duracionGarantia, fechaSolicitud, estado, motivoRechazo);
     }
 
     // Cada método valida PRIMERO, cambia el estado DESPUÉS.
 
+    /**
+     * Acepta la solicitud RMA.
+     * Valida que esté en estado PENDIENTE.
+     */
     public void aceptar() {
+        validarAceptar();
         verificarTransicion(EstadoSolicitudRMA.ACEPTADA);
         this.estado = EstadoSolicitudRMA.ACEPTADA;
     }
 
+    /**
+     * Valida que la solicitud pueda ser aceptada.
+     */
+    public void validarAceptar() {
+        exigir(estaPendiente(), "Solo se puede aceptar una SolicitudRMA pendiente");
+    }
+
+    /**
+     * Rechaza la solicitud RMA.
+     * Valida que esté en estado PENDIENTE y que se proporcione un motivo.
+     */
     public void rechazar(String motivo) {
-        if (motivo == null || motivo.isBlank()) {
-            throw new ReglaDominioException("El rechazo de una SolicitudRMA exige indicar un motivo");
-        }
+        validarRechazar(motivo);
         verificarTransicion(EstadoSolicitudRMA.RECHAZADA);
         this.estado = EstadoSolicitudRMA.RECHAZADA;
         this.motivoRechazo = motivo;
+    }
+
+    /**
+     * Valida que la solicitud pueda ser rechazada.
+     */
+    public void validarRechazar(String motivo) {
+        exigir(estaPendiente(), "Solo se puede rechazar una SolicitudRMA pendiente");
+        exigir(motivo != null && !motivo.isBlank(), "El rechazo de una SolicitudRMA exige indicar un motivo");
     }
 
     public boolean estaPendiente() {

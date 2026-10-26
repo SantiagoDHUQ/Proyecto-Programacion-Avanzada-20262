@@ -1,5 +1,8 @@
 package org.uniquindio.proyectoavanzadacompuparts.application.usecase;
 
+import lombok.RequiredArgsConstructor;
+import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 import org.uniquindio.proyectoavanzadacompuparts.application.dto.request.RegistrarComponenteRequest;
 import org.uniquindio.proyectoavanzadacompuparts.application.exception.RecursoNoEncontradoException;
 import org.uniquindio.proyectoavanzadacompuparts.domain.entity.Componente;
@@ -19,17 +22,14 @@ import java.util.Objects;
  * <p>El vendedor debe existir y ser el dueño del SKU. Las unidades físicas se
  * agregan con {@link AgregarUnidadUseCase} para que cada una tenga su serial.</p>
  */
+@Service
+@RequiredArgsConstructor
 public class RegistrarComponenteUseCase {
 
     private final ComponenteRepository componenteRepository;
     private final VendedorRepository vendedorRepository;
 
-    public RegistrarComponenteUseCase(ComponenteRepository componenteRepository,
-                                      VendedorRepository vendedorRepository) {
-        this.componenteRepository = Objects.requireNonNull(componenteRepository);
-        this.vendedorRepository = Objects.requireNonNull(vendedorRepository);
-    }
-
+    @Transactional
     public Componente ejecutar(RegistrarComponenteRequest request) {
         if (componenteRepository.buscarPorId(request.id()).isPresent()) {
             throw new ReglaDominioException("Ya existe un Componente con ese identificador");

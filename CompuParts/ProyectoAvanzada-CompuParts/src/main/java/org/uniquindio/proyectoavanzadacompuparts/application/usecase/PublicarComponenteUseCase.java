@@ -1,5 +1,8 @@
 package org.uniquindio.proyectoavanzadacompuparts.application.usecase;
 
+import lombok.RequiredArgsConstructor;
+import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 import org.uniquindio.proyectoavanzadacompuparts.application.exception.RecursoNoEncontradoException;
 import org.uniquindio.proyectoavanzadacompuparts.domain.entity.Componente;
 import org.uniquindio.proyectoavanzadacompuparts.domain.repository.ComponenteRepository;
@@ -12,14 +15,13 @@ import java.util.Objects;
  * <p>Un componente eliminado no puede revivirse; para eso existe el borrado
  * lógico y no se ofrece una operación de restauración.</p>
  */
+@Service
+@RequiredArgsConstructor
 public class PublicarComponenteUseCase {
 
     private final ComponenteRepository componenteRepository;
 
-    public PublicarComponenteUseCase(ComponenteRepository componenteRepository) {
-        this.componenteRepository = Objects.requireNonNull(componenteRepository);
-    }
-
+    @Transactional
     public Componente ejecutar(String componenteId, String vendedorId) {
         Componente componente = componenteRepository.buscarPorId(componenteId)
                 .orElseThrow(() -> new RecursoNoEncontradoException("No existe un Componente con ese identificador"));

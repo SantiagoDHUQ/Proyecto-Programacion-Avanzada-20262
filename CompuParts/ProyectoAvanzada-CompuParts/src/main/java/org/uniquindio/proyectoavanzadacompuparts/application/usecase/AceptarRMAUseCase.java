@@ -40,14 +40,11 @@ public class AceptarRMAUseCase {
 
         componente.validarPropietario(vendedorId);
 
-        if (!solicitud.estaPendiente()) {
-            throw new ReglaDominioException("Solo se puede aceptar una SolicitudRMA pendiente");
-        }
+        // El dominio valida la transición
+        solicitud.validarAceptar();
 
         UnidadInventario unidad = componente.unidadPorNumeroSerie(solicitud.getNumeroSerie());
-        if (unidad.getEstado() != EstadoUnidad.EN_RMA) {
-            throw new ReglaDominioException("La unidad no está en RMA");
-        }
+        unidad.validarEstaEnRMA();
 
         solicitud.aceptar();
         return solicitudRMARepository.guardar(solicitud);

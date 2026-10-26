@@ -26,23 +26,32 @@ public class UnidadInventario {
     private LocalDate fechaEstimadaLlegada;
     private UUID reservaPreventaId;
 
-    private UnidadInventario(String numeroSerie, EstadoUnidad estado, LocalDate fechaEstimadaLlegada) {
-        this.id = UUID.randomUUID();
+    private UnidadInventario(UUID id, String numeroSerie, EstadoUnidad estado,
+                             LocalDate fechaEstimadaLlegada, UUID reservaPreventaId) {
+        this.id = id == null ? UUID.randomUUID() : id;
         this.numeroSerie = numeroSerie;
         this.estado = estado;
         this.fechaEstimadaLlegada = fechaEstimadaLlegada;
+        this.reservaPreventaId = reservaPreventaId;
     }
 
     public static UnidadInventario crearDisponible(String numeroSerie) {
         exigir(numeroSerie != null && !numeroSerie.isBlank(), "El número de serie es obligatorio");
-        return new UnidadInventario(numeroSerie.trim(), EstadoUnidad.DISPONIBLE, null);
+        return new UnidadInventario(null, numeroSerie.trim(), EstadoUnidad.DISPONIBLE, null, null);
     }
 
     public static UnidadInventario crearPreventa(LocalDate fechaEstimadaLlegada) {
         exigir(fechaEstimadaLlegada != null, "La preventa exige una fecha estimada de llegada");
         exigir(!fechaEstimadaLlegada.isBefore(LocalDate.now()),
                 "La fecha estimada de llegada no puede ser anterior a hoy");
-        return new UnidadInventario(null, EstadoUnidad.PREVENTA, fechaEstimadaLlegada);
+        return new UnidadInventario(null, null, EstadoUnidad.PREVENTA, fechaEstimadaLlegada, null);
+    }
+
+    public static UnidadInventario reconstruir(UUID id, String numeroSerie, EstadoUnidad estado,
+                                               LocalDate fechaEstimadaLlegada, UUID reservaPreventaId) {
+        exigir(id != null, "El identificador de la unidad es obligatorio");
+        exigir(estado != null, "El estado de la unidad es obligatorio");
+        return new UnidadInventario(id, numeroSerie, estado, fechaEstimadaLlegada, reservaPreventaId);
     }
 
     /** Reserva la unidad para una compra pendiente. */
@@ -111,6 +120,50 @@ public class UnidadInventario {
     public void entrarEnRMA() {
         exigir(estado == EstadoUnidad.VENDIDA, "Solo una unidad vendida puede entrar en RMA");
         this.estado = EstadoUnidad.EN_RMA;
+    }
+
+    // ---------- Verificaciones de estado ----------
+
+    /**
+     * Regla: una unidad solo participa en una compra mientras está RESERVADA.
+     * La verificación vive en la unidad para que ningún caso de uso tenga que
+     * decidir por su cuenta si el inventario es coherente.
+     */
+    public void validarEstaReservada() {
+        exigir(estado == EstadoUnidad.RESERVADA, "La unidad no está reservada");
+    }
+
+    /** Regla: solo una unidad vendida puede entrar en RMA. */
+    public void validarEstaVendida() {
+        exigir(estado == EstadoUnidad.VENDIDA, "La unidad no está vendida y no puede entrar en RMA");
+    }
+
+    /** Regla: una unidad en RMA es la única que puede ser reembolsada. */
+    public void validarEstaEnRMA() {
+        exigir(estado == EstadoUnidad.EN_RMA, "La unidad no está en RMA; primero debe aceptarse su solicitud");
+    }
+
+    /** Regla: solo una unidad publicada en preventa puede reservarse. */
+    public void validarEstaEnPreventa() {
+        exigir(estado == EstadoUnidad.PREVENTA, "La unidad no está disponible para reservar en preventa");
+    }
+
+    /** Regla: la unidad apartada en preventa debe ser la de esta reserva. */
+    public void validarReservaPreventaCoincide(UUID reservaId) {
+        exigir(reservaId != null && reservaId.equals(this.reservaPreventaId),
+                "La unidad no está reservada por esta preventa");
+    }
+
+    /**
+     * Valida que la unidad esté en un estado válido para comprar una reserva de preventa.
+     * Debe estar RESERVADA (ya recibida) o PREVENTA_RESERVADA (reservada pero no recibida).
+     * Si está en PREVENTA_RESERVADA, se lanza excepción con mensaje "aún no ha llegado".
+     */
+    public void validarParaComprarReservaPreventa() {
+        if (estado == EstadoUnidad.PREVENTA_RESERVADA) {
+            throw new ReglaDominioException("La unidad aún no ha llegado o ya no está reservada para el comprador");
+        }
+        exigir(estado == EstadoUnidad.RESERVADA, "La unidad no está reservada para compra");
     }
 
     public void rechazarRMA() {

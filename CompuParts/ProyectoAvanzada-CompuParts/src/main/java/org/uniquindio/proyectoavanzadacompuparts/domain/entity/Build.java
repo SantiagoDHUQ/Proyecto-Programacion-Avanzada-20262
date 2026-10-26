@@ -26,14 +26,20 @@ public class Build {
     private final List<Componente> componentes;
     private EstadoBuild estado;
 
-    private Build() {
-        this.id = UUID.randomUUID();
-        this.componentes = new ArrayList<>();
-        this.estado = EstadoBuild.EN_CONSTRUCCION;
+    private Build(UUID id, List<Componente> componentes, EstadoBuild estado) {
+        this.id = id == null ? UUID.randomUUID() : id;
+        this.componentes = componentes == null ? new ArrayList<>() : new ArrayList<>(componentes);
+        this.estado = estado == null ? EstadoBuild.EN_CONSTRUCCION : estado;
     }
 
     public static Build crear() {
-        return new Build();
+        return new Build(null, new ArrayList<>(), EstadoBuild.EN_CONSTRUCCION);
+    }
+
+    public static Build reconstruir(UUID id, List<Componente> componentes, EstadoBuild estado) {
+        exigir(id != null, "El identificador del Build es obligatorio");
+        exigir(estado != null, "El estado del Build es obligatorio");
+        return new Build(id, componentes, estado);
     }
 
     /**
@@ -189,9 +195,28 @@ public class Build {
 
     /** Marca el Build como comprado cuando la compra asociada se confirma. */
     public void marcarComoComprado() {
+        validarMarcarComoComprado();
+        this.estado = EstadoBuild.COMPRADO;
+    }
+
+    /**
+     * Valida que el Build pueda ser marcado como comprado.
+     */
+    public void validarMarcarComoComprado() {
         exigir(estado == EstadoBuild.LISTO_PARA_COMPRA,
                 "Solo un Build listo para compra puede marcarse como comprado");
-        this.estado = EstadoBuild.COMPRADO;
+    }
+
+    /**
+     * Valida que el Build esté listo para realizar una compra.
+     * Lanza ReglaDominioException si no cumple las invariantes.
+     * <p>
+     * No valida stock disponible porque eso se verifica en RealizarCompraUseCase
+     * antes de reservar las unidades. Aquí solo validamos el estado del build.
+     */
+    public void validarListoParaComprar() {
+        exigir(estaActivo(), "El Build debe estar activo para poder comprarse");
+        exigir(estado == EstadoBuild.LISTO_PARA_COMPRA, "El Build debe estar listo para compra");
     }
 
     public Componente componentePorId(String id) {
