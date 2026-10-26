@@ -22,7 +22,6 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
-import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.put;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
@@ -204,7 +203,7 @@ public class ComponenteApiIntegrationTest {
         crearComponente(componenteId, dueno, "STORAGE", null, null, 365);
         agregarUnidad(componenteId, dueno, "SER-STORAGE");
 
-        mockMvc.perform(put("/api/componentes/{id}/agotado", componenteId)
+        mockMvc.perform(post("/api/componentes/{id}/agotado", componenteId)
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("""
                                 {"vendedorId":"%s"}
@@ -214,14 +213,14 @@ public class ComponenteApiIntegrationTest {
                 .andExpect(jsonPath("$.stockDisponible").value(1))
                 .andExpect(jsonPath("$.unidades[0].estado").value("DISPONIBLE"));
 
-        mockMvc.perform(put("/api/componentes/{id}/publicar", componenteId)
+        mockMvc.perform(post("/api/componentes/{id}/publicar", componenteId)
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("""
                                 {"vendedorId":"%s"}
                                 """.formatted(otro)))
                 .andExpect(status().isBadRequest());
 
-        mockMvc.perform(put("/api/componentes/{id}/publicar", componenteId)
+        mockMvc.perform(post("/api/componentes/{id}/publicar", componenteId)
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("""
                                 {"vendedorId":"%s"}

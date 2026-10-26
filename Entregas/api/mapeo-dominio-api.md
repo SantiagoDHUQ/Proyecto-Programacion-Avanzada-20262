@@ -38,8 +38,8 @@ Esta API usa el modelo B: un `Componente` es el SKU/anuncio y cada
 | `Componente.agregarUnidad()` | `AgregarUnidadUseCase` | `POST /api/componentes/{id}/unidades` |
 | `Componente.agregarPreventa()` | `PublicarPreventaUseCase` | `POST /api/componentes/{id}/preventas` |
 | `Componente.recibirPreventa()` | `RecibirPreventaUseCase` | `POST /api/componentes/{id}/unidades/{unidadId}/recibir` |
-| `Componente.marcarAgotado()` | `MarcarComponenteAgotadoUseCase` | `PUT /api/componentes/{id}/agotado` |
-| `Componente.publicar()` | `PublicarComponenteUseCase` | `PUT /api/componentes/{id}/publicar` |
+| `Componente.marcarAgotado()` | `MarcarComponenteAgotadoUseCase` | `POST /api/componentes/{id}/agotado` |
+| `Componente.publicar()` | `PublicarComponenteUseCase` | `POST /api/componentes/{id}/publicar` |
 | `Componente.eliminar()` | `EliminarComponenteUseCase` | `DELETE /api/componentes/{id}?vendedorId=...` |
 
 Estados comerciales del SKU: `PUBLICADO`, `AGOTADO`, `ELIMINADO`.

@@ -37,7 +37,6 @@ import static org.mockito.Mockito.when;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
-import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.put;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.header;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
@@ -258,7 +257,7 @@ class ComponenteControllerTest {
         componente.marcarAgotado();
         when(marcarComponenteAgotadoUseCase.ejecutar("comp-1", "v-1")).thenReturn(componente);
 
-        mockMvc.perform(put("/api/componentes/{id}/agotado", "comp-1")
+        mockMvc.perform(post("/api/componentes/{id}/agotado", "comp-1")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("""
                                 {"vendedorId":"v-1"}
@@ -276,7 +275,7 @@ class ComponenteControllerTest {
         componente.publicar();
         when(publicarComponenteUseCase.ejecutar("comp-1", "v-1")).thenReturn(componente);
 
-        mockMvc.perform(put("/api/componentes/{id}/publicar", "comp-1")
+        mockMvc.perform(post("/api/componentes/{id}/publicar", "comp-1")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("""
                                 {"vendedorId":"v-1"}
@@ -289,7 +288,7 @@ class ComponenteControllerTest {
 
     @Test
     void debeRetornar400CuandoLaOperacionDeVendedorNoIndicaVendedor() throws Exception {
-        mockMvc.perform(put("/api/componentes/{id}/agotado", "comp-1")
+        mockMvc.perform(post("/api/componentes/{id}/agotado", "comp-1")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("{}"))
                 .andExpect(status().isBadRequest())
