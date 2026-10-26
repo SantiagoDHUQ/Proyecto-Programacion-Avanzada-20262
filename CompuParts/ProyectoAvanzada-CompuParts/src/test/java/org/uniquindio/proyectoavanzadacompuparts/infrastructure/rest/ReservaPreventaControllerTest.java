@@ -1,248 +1,173 @@
 package org.uniquindio.proyectoavanzadacompuparts.infrastructure.rest;
 
-import com.jayway.jsonpath.JsonPath;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.test.context.SpringBootTest;
-import org.springframework.boot.webmvc.test.autoconfigure.AutoConfigureMockMvc;
+import org.springframework.boot.webmvc.test.autoconfigure.WebMvcTest;
 import org.springframework.http.MediaType;
+import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.web.servlet.MockMvc;
-import org.springframework.test.web.servlet.MvcResult;
-import org.uniquindio.proyectoavanzadacompuparts.domain.entity.Componente;
+import org.uniquindio.proyectoavanzadacompuparts.application.exception.RecursoNoEncontradoException;
+import org.uniquindio.proyectoavanzadacompuparts.application.usecase.CancelarReservaPreventaUseCase;
+import org.uniquindio.proyectoavanzadacompuparts.application.usecase.ComprarReservaPreventaUseCase;
+import org.uniquindio.proyectoavanzadacompuparts.application.usecase.ConsultarReservaPreventaUseCase;
+import org.uniquindio.proyectoavanzadacompuparts.application.usecase.ReservarPreventaUseCase;
+import org.uniquindio.proyectoavanzadacompuparts.domain.entity.Compra;
 import org.uniquindio.proyectoavanzadacompuparts.domain.entity.ReservaPreventa;
-import org.uniquindio.proyectoavanzadacompuparts.domain.repository.ComponenteRepository;
-import org.uniquindio.proyectoavanzadacompuparts.domain.repository.ReservaPreventaRepository;
-import org.uniquindio.proyectoavanzadacompuparts.domain.valueobject.EstadoReservaPreventa;
-import org.uniquindio.proyectoavanzadacompuparts.domain.valueobject.EstadoUnidad;
+import org.uniquindio.proyectoavanzadacompuparts.domain.exception.ReglaDominioException;
+import org.uniquindio.proyectoavanzadacompuparts.domain.valueobject.ItemCompra;
+import org.uniquindio.proyectoavanzadacompuparts.domain.valueobject.Precio;
 
-import java.time.LocalDate;
+import java.math.BigDecimal;
+import java.util.List;
 import java.util.UUID;
 
 import static org.hamcrest.Matchers.containsString;
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.verifyNoInteractions;
+import static org.mockito.Mockito.when;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.header;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
-@SpringBootTest
-@AutoConfigureMockMvc
-public class ReservaPreventaControllerTest {
+@WebMvcTest(ReservaPreventaController.class)
+class ReservaPreventaControllerTest {
+
+    private static final String COMPONENTE_ID = "comp-1";
+    private static final UUID UNIDAD_ID = UUID.fromString("00000000-0000-0000-0000-000000000001");
+    private static final String COMPRADOR_ID = "comprador-1";
 
     @Autowired
     private MockMvc mockMvc;
 
-    @Autowired
-    private ComponenteRepository componenteRepository;
+    @MockitoBean
+    private ReservarPreventaUseCase reservarPreventaUseCase;
 
-    @Autowired
-    private ReservaPreventaRepository reservaPreventaRepository;
+    @MockitoBean
+    private CancelarReservaPreventaUseCase cancelarReservaPreventaUseCase;
 
-    private String id(String prefijo) {
-        return prefijo + "-" + UUID.randomUUID();
-    }
+    @MockitoBean
+    private ConsultarReservaPreventaUseCase consultarReservaPreventaUseCase;
 
-    private void crearVendedor(String vendedorId) throws Exception {
-        mockMvc.perform(post("/api/vendedores")
-                        .contentType(MediaType.APPLICATION_JSON)
-                        .content("""
-                                {"id":"%s","nombre":"Distribuidor","tipo":"AUTORIZADO"}
-                                """.formatted(vendedorId)))
-                .andExpect(status().isCreated());
-    }
-
-    private void crearComponente(String componenteId, String vendedorId) throws Exception {
-        mockMvc.perform(post("/api/componentes")
-                        .contentType(MediaType.APPLICATION_JSON)
-                        .content("""
-                                {
-                                  "id":"%s","nombre":"GPU","categoria":"GPU",
-                                  "socket":"PCIe","wattajeRequerido":250,"tipoMemoria":"DDR5",
-                                  "moneda":"COP","precio":200000,"duracionGarantia":365,
-                                  "vendedorId":"%s"
-                                }
-                                """.formatted(componenteId, vendedorId)))
-                .andExpect(status().isCreated());
-    }
-
-    private UUID publicarPreventa(String componenteId, String vendedorId) throws Exception {
-        mockMvc.perform(post("/api/componentes/{id}/preventas", componenteId)
-                        .contentType(MediaType.APPLICATION_JSON)
-                        .content("""
-                                {"vendedorId":"%s","fechaEstimadaLlegada":"%s"}
-                                """.formatted(vendedorId, LocalDate.now().plusDays(10))))
-                .andExpect(status().isOk())
-                .andExpect(jsonPath("$.stockPreventa").value(1));
-
-        Componente componente = componenteRepository.buscarPorId(componenteId).orElseThrow();
-        return componente.getUnidades().getFirst().getId();
-    }
-
-    private String reservar(String componenteId, UUID unidadId, String compradorId) throws Exception {
-        MvcResult result = mockMvc.perform(post(
-                                "/api/componentes/{componenteId}/unidades/{unidadId}/reservas-preventa",
-                                componenteId, unidadId)
-                        .contentType(MediaType.APPLICATION_JSON)
-                        .content("""
-                                {"compradorId":"%s"}
-                                """.formatted(compradorId)))
-                .andExpect(status().isCreated())
-                .andExpect(jsonPath("$.estado").value("ACTIVA"))
-                .andReturn();
-        return JsonPath.read(result.getResponse().getContentAsString(), "$.id");
-    }
-
-    private void recibir(String componenteId, UUID unidadId, String vendedorId, String serial) throws Exception {
-        mockMvc.perform(post("/api/componentes/{id}/unidades/{unidadId}/recibir", componenteId, unidadId)
-                        .contentType(MediaType.APPLICATION_JSON)
-                        .content("""
-                                {"vendedorId":"%s","numeroSerie":"%s"}
-                                """.formatted(vendedorId, serial)))
-                .andExpect(status().isOk());
-    }
+    @MockitoBean
+    private ComprarReservaPreventaUseCase comprarReservaPreventaUseCase;
 
     @Test
-    void reservaRecibeConvierteEnCompraYLaCancelaSinPerderLaReserva() throws Exception {
-        String vendedorId = id("v");
-        String componenteId = id("gpu");
-        String compradorId = id("comprador");
-        String otroComprador = id("comprador");
-        crearVendedor(vendedorId);
-        crearComponente(componenteId, vendedorId);
-        UUID unidadId = publicarPreventa(componenteId, vendedorId);
-
-        String reservaId = reservar(componenteId, unidadId, compradorId);
+    void debeReservarUnaUnidadEnPreventa() throws Exception {
+        ReservaPreventa reserva = reservaActiva();
+        when(reservarPreventaUseCase.ejecutar(COMPONENTE_ID, UNIDAD_ID, COMPRADOR_ID))
+                .thenReturn(reserva);
 
         mockMvc.perform(post("/api/componentes/{componenteId}/unidades/{unidadId}/reservas-preventa",
-                                componenteId, unidadId)
+                        COMPONENTE_ID, UNIDAD_ID)
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("""
-                                {"compradorId":"%s"}
-                                """.formatted(otroComprador)))
-                .andExpect(status().isBadRequest());
-
-        mockMvc.perform(post("/api/reservas-preventa/{id}/compra", reservaId)
-                        .contentType(MediaType.APPLICATION_JSON)
-                        .content("""
-                                {"compradorId":"%s"}
-                                """.formatted(compradorId)))
-                .andExpect(status().isBadRequest())
-                .andExpect(jsonPath("$.mensaje").value(containsString("aún no ha llegado")));
-
-        recibir(componenteId, unidadId, vendedorId, "SER-PREVENTA");
-
-        mockMvc.perform(get("/api/componentes/{id}", componenteId))
-                .andExpect(status().isOk())
-                .andExpect(jsonPath("$.stockDisponible").value(0))
-                .andExpect(jsonPath("$.unidades[0].estado").value("RESERVADA"))
-                .andExpect(jsonPath("$.unidades[0].numeroSerie").value("SER-PREVENTA"));
-
-        mockMvc.perform(post("/api/reservas-preventa/{id}/compra", reservaId)
-                        .contentType(MediaType.APPLICATION_JSON)
-                        .content("""
-                                {"compradorId":"%s"}
-                                """.formatted(otroComprador)))
-                .andExpect(status().isBadRequest())
-                .andExpect(jsonPath("$.mensaje").value(containsString("Solo el comprador")));
-
-        MvcResult compraResult = mockMvc.perform(post("/api/reservas-preventa/{id}/compra", reservaId)
-                        .contentType(MediaType.APPLICATION_JSON)
-                        .content("""
-                                {"compradorId":"%s"}
-                                """.formatted(compradorId)))
+                                {"compradorId":"comprador-1"}
+                                """))
                 .andExpect(status().isCreated())
+                .andExpect(header().string("Location", containsString("/api/reservas-preventa/" + reserva.getId())))
+                .andExpect(jsonPath("$.id").value(reserva.getId().toString()))
+                .andExpect(jsonPath("$.componenteId").value(COMPONENTE_ID))
+                .andExpect(jsonPath("$.unidadId").value(UNIDAD_ID.toString()))
+                .andExpect(jsonPath("$.compradorId").value(COMPRADOR_ID))
+                .andExpect(jsonPath("$.estado").value("ACTIVA"));
+
+        verify(reservarPreventaUseCase).ejecutar(COMPONENTE_ID, UNIDAD_ID, COMPRADOR_ID);
+    }
+
+    @Test
+    void debeRetornar400CuandoFaltaElComprador() throws Exception {
+        mockMvc.perform(post("/api/componentes/{componenteId}/unidades/{unidadId}/reservas-preventa",
+                        COMPONENTE_ID, UNIDAD_ID)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{}"))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.mensaje", containsString("compradorId")));
+
+        verifyNoInteractions(reservarPreventaUseCase);
+    }
+
+    @Test
+    void debeConsultarUnaReservaExistente() throws Exception {
+        ReservaPreventa reserva = reservaActiva();
+        when(consultarReservaPreventaUseCase.ejecutar(reserva.getId())).thenReturn(reserva);
+
+        mockMvc.perform(get("/api/reservas-preventa/{id}", reserva.getId()))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.id").value(reserva.getId().toString()))
+                .andExpect(jsonPath("$.estado").value("ACTIVA"));
+    }
+
+    @Test
+    void debeRetornar404CuandoLaReservaNoExiste() throws Exception {
+        UUID reservaId = UUID.fromString("00000000-0000-0000-0000-000000000002");
+        when(consultarReservaPreventaUseCase.ejecutar(reservaId))
+                .thenThrow(new RecursoNoEncontradoException("No existe la reserva"));
+
+        mockMvc.perform(get("/api/reservas-preventa/{id}", reservaId))
+                .andExpect(status().isNotFound())
+                .andExpect(jsonPath("$.mensaje").value("No existe la reserva"));
+    }
+
+    @Test
+    void debeCancelarLaReservaDelComprador() throws Exception {
+        ReservaPreventa reserva = reservaActiva();
+        reserva.cancelar();
+        when(cancelarReservaPreventaUseCase.ejecutar(reserva.getId(), COMPRADOR_ID))
+                .thenReturn(reserva);
+
+        mockMvc.perform(delete("/api/reservas-preventa/{id}", reserva.getId())
+                        .param("compradorId", COMPRADOR_ID))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.estado").value("CANCELADA"));
+
+        verify(cancelarReservaPreventaUseCase).ejecutar(reserva.getId(), COMPRADOR_ID);
+    }
+
+    @Test
+    void debeComprarUnaReservaYaRecibida() throws Exception {
+        ReservaPreventa reserva = reservaActiva();
+        Compra compra = compraDirecta();
+        when(comprarReservaPreventaUseCase.ejecutar(reserva.getId(), COMPRADOR_ID)).thenReturn(compra);
+
+        mockMvc.perform(post("/api/reservas-preventa/{id}/compra", reserva.getId())
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                {"compradorId":"comprador-1"}
+                                """))
+                .andExpect(status().isCreated())
+                .andExpect(header().string("Location", containsString("/api/compras/compra-preventa")))
+                .andExpect(jsonPath("$.id").value("compra-preventa"))
                 .andExpect(jsonPath("$.estado").value("PENDIENTE"))
-                .andExpect(jsonPath("$.items.length()").value(1))
-                .andReturn();
-        String compraId = JsonPath.read(compraResult.getResponse().getContentAsString(), "$.id");
+                .andExpect(jsonPath("$.items.length()").value(1));
 
-        ReservaPreventa enCompra = reservaPreventaRepository.buscarPorId(UUID.fromString(reservaId)).orElseThrow();
-        assertEquals(EstadoReservaPreventa.EN_COMPRA, enCompra.getEstado());
-
-        mockMvc.perform(post("/api/compras/{id}/cancelar", compraId))
-                .andExpect(status().isOk())
-                .andExpect(jsonPath("$.estado").value("CANCELADA"));
-
-        ReservaPreventa reactivada = reservaPreventaRepository.buscarPorId(UUID.fromString(reservaId)).orElseThrow();
-        assertEquals(EstadoReservaPreventa.ACTIVA, reactivada.getEstado());
-        assertEquals(EstadoUnidad.RESERVADA,
-                componenteRepository.buscarPorId(componenteId).orElseThrow()
-                        .getUnidades().getFirst().getEstado());
-
-        MvcResult segundaCompra = mockMvc.perform(post("/api/reservas-preventa/{id}/compra", reservaId)
-                        .contentType(MediaType.APPLICATION_JSON)
-                        .content("""
-                                {"compradorId":"%s"}
-                                """.formatted(compradorId)))
-                .andExpect(status().isCreated())
-                .andReturn();
-        String segundaCompraId = JsonPath.read(segundaCompra.getResponse().getContentAsString(), "$.id");
-
-        mockMvc.perform(post("/api/compras/{id}/confirmar", segundaCompraId))
-                .andExpect(status().isOk())
-                .andExpect(jsonPath("$.estado").value("COMPLETADA"));
-
-        ReservaPreventa convertida = reservaPreventaRepository.buscarPorId(UUID.fromString(reservaId)).orElseThrow();
-        assertEquals(EstadoReservaPreventa.CONVERTIDA, convertida.getEstado());
-        assertEquals(EstadoUnidad.VENDIDA,
-                componenteRepository.buscarPorId(componenteId).orElseThrow()
-                        .getUnidades().getFirst().getEstado());
+        verify(comprarReservaPreventaUseCase).ejecutar(reserva.getId(), COMPRADOR_ID);
     }
 
     @Test
-    void cancelarLaReservaAntesDeLaLlegadaDevuelveLaUnidadAPreventa() throws Exception {
-        String vendedorId = id("v");
-        String componenteId = id("gpu");
-        crearVendedor(vendedorId);
-        crearComponente(componenteId, vendedorId);
-        UUID unidadId = publicarPreventa(componenteId, vendedorId);
-        String compradorId = id("comprador");
-        String reservaId = reservar(componenteId, unidadId, compradorId);
+    void debeRetornar400CuandoLaPreventaAunNoHaLlegado() throws Exception {
+        ReservaPreventa reserva = reservaActiva();
+        when(comprarReservaPreventaUseCase.ejecutar(reserva.getId(), COMPRADOR_ID))
+                .thenThrow(new ReglaDominioException("La unidad aún no ha llegado"));
 
-        mockMvc.perform(delete("/api/reservas-preventa/{id}", reservaId)
-                        .param("compradorId", "otro-comprador"))
-                .andExpect(status().isBadRequest());
-
-        mockMvc.perform(delete("/api/reservas-preventa/{id}", reservaId)
-                        .param("compradorId", compradorId))
-                .andExpect(status().isOk())
-                .andExpect(jsonPath("$.estado").value("CANCELADA"));
-
-        mockMvc.perform(get("/api/componentes/{id}", componenteId))
-                .andExpect(status().isOk())
-                .andExpect(jsonPath("$.stockPreventa").value(1))
-                .andExpect(jsonPath("$.unidades[0].estado").value("PREVENTA"))
-                .andExpect(jsonPath("$.unidades[0].reservaPreventaId").doesNotExist());
-
-        ReservaPreventa reserva = reservaPreventaRepository.buscarPorId(UUID.fromString(reservaId)).orElseThrow();
-        assertEquals(EstadoReservaPreventa.CANCELADA, reserva.getEstado());
-    }
-
-    @Test
-    void recibirUnaPreventaSinReservaLaDejaDisponibleYExigeAlDueno() throws Exception {
-        String vendedorId = id("v");
-        String otroVendedorId = id("v");
-        String componenteId = id("gpu");
-        crearVendedor(vendedorId);
-        crearVendedor(otroVendedorId);
-        crearComponente(componenteId, vendedorId);
-        UUID unidadId = publicarPreventa(componenteId, vendedorId);
-
-        mockMvc.perform(post("/api/componentes/{id}/unidades/{unidadId}/recibir", componenteId, unidadId)
+        mockMvc.perform(post("/api/reservas-preventa/{id}/compra", reserva.getId())
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("""
-                                {"vendedorId":"%s","numeroSerie":"SER-NO-DUENO"}
-                                """.formatted(otroVendedorId)))
+                                {"compradorId":"comprador-1"}
+                                """))
                 .andExpect(status().isBadRequest())
-                .andExpect(jsonPath("$.mensaje").value(containsString("dueño")));
+                .andExpect(jsonPath("$.mensaje").value("La unidad aún no ha llegado"));
+    }
 
-        recibir(componenteId, unidadId, vendedorId, "SER-DISPONIBLE");
+    private ReservaPreventa reservaActiva() {
+        return ReservaPreventa.crear(COMPONENTE_ID, UNIDAD_ID, COMPRADOR_ID);
+    }
 
-        Componente componente = componenteRepository.buscarPorId(componenteId).orElseThrow();
-        assertEquals(EstadoUnidad.DISPONIBLE, componente.getUnidades().getFirst().getEstado());
-        assertNotNull(componente.getUnidades().getFirst().getNumeroSerie());
-        assertEquals(1, componente.stockDisponible());
+    private Compra compraDirecta() {
+        Precio precio = new Precio(new BigDecimal("100000"), "COP");
+        ItemCompra item = new ItemCompra(UNIDAD_ID, COMPONENTE_ID, "SER-1", precio);
+        return Compra.realizar("compra-preventa", null, COMPRADOR_ID, List.of(item));
     }
 }

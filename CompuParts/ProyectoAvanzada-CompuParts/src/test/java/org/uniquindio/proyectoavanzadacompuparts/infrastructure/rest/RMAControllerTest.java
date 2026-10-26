@@ -1,177 +1,195 @@
 package org.uniquindio.proyectoavanzadacompuparts.infrastructure.rest;
 
-import com.jayway.jsonpath.JsonPath;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.test.context.SpringBootTest;
-import org.springframework.boot.webmvc.test.autoconfigure.AutoConfigureMockMvc;
+import org.springframework.boot.webmvc.test.autoconfigure.WebMvcTest;
 import org.springframework.http.MediaType;
+import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.web.servlet.MockMvc;
-import org.springframework.test.web.servlet.MvcResult;
-import org.uniquindio.proyectoavanzadacompuparts.domain.entity.Compra;
-import org.uniquindio.proyectoavanzadacompuparts.domain.entity.Componente;
-import org.uniquindio.proyectoavanzadacompuparts.domain.entity.UnidadInventario;
-import org.uniquindio.proyectoavanzadacompuparts.domain.entity.Vendedor;
-import org.uniquindio.proyectoavanzadacompuparts.domain.repository.ComponenteRepository;
-import org.uniquindio.proyectoavanzadacompuparts.domain.repository.CompraRepository;
-import org.uniquindio.proyectoavanzadacompuparts.domain.repository.VendedorRepository;
-import org.uniquindio.proyectoavanzadacompuparts.domain.valueobject.CategoriaComponente;
-import org.uniquindio.proyectoavanzadacompuparts.domain.valueobject.EspecificacionTecnica;
-import org.uniquindio.proyectoavanzadacompuparts.domain.valueobject.EstadoUnidad;
-import org.uniquindio.proyectoavanzadacompuparts.domain.valueobject.ItemCompra;
-import org.uniquindio.proyectoavanzadacompuparts.domain.valueobject.Precio;
+import org.uniquindio.proyectoavanzadacompuparts.application.exception.RecursoNoEncontradoException;
+import org.uniquindio.proyectoavanzadacompuparts.application.usecase.AceptarRMAUseCase;
+import org.uniquindio.proyectoavanzadacompuparts.application.usecase.ConsultarRMAUseCase;
+import org.uniquindio.proyectoavanzadacompuparts.application.usecase.ListarRMAUseCase;
+import org.uniquindio.proyectoavanzadacompuparts.application.usecase.RechazarRMAUseCase;
+import org.uniquindio.proyectoavanzadacompuparts.application.usecase.SolicitarRMAUseCase;
+import org.uniquindio.proyectoavanzadacompuparts.domain.entity.SolicitudRMA;
+import org.uniquindio.proyectoavanzadacompuparts.domain.exception.ReglaDominioException;
 
-import java.math.BigDecimal;
+import java.time.LocalDate;
 import java.util.List;
-import java.util.UUID;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.hamcrest.Matchers.containsString;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.verifyNoInteractions;
+import static org.mockito.Mockito.when;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.header;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
-@SpringBootTest
-@AutoConfigureMockMvc
-public class RMAControllerTest {
+@WebMvcTest(RMAController.class)
+class RMAControllerTest {
 
     @Autowired
     private MockMvc mockMvc;
 
-    @Autowired
-    private VendedorRepository vendedorRepository;
+    @MockitoBean
+    private SolicitarRMAUseCase solicitarRMAUseCase;
 
-    @Autowired
-    private ComponenteRepository componenteRepository;
+    @MockitoBean
+    private AceptarRMAUseCase aceptarRMAUseCase;
 
-    @Autowired
-    private CompraRepository compraRepository;
+    @MockitoBean
+    private RechazarRMAUseCase rechazarRMAUseCase;
 
-    private String id(String prefijo) {
-        return prefijo + "-" + UUID.randomUUID();
-    }
+    @MockitoBean
+    private ConsultarRMAUseCase consultarRMAUseCase;
 
-    private record Escenario(String vendedorId, String componenteId, String compraId,
-                             String serial, String compradorId) {
-    }
+    @MockitoBean
+    private ListarRMAUseCase listarRMAUseCase;
 
-    private Escenario crearCompraVendida(String prefijo) {
-        String vendedorId = prefijo + "-vendedor";
-        String componenteId = prefijo + "-componente";
-        String compraId = prefijo + "-compra";
-        String serial = prefijo + "-SER";
-        String compradorId = prefijo + "-comprador";
+    @Test
+    void debeSolicitarUnaRMAValida() throws Exception {
+        SolicitudRMA solicitud = solicitudPendiente();
+        when(solicitarRMAUseCase.ejecutar(any())).thenReturn(solicitud);
 
-        Vendedor vendedor = Vendedor.crear(vendedorId, "Distribuidor Oficial", "AUTORIZADO");
-        vendedorRepository.guardar(vendedor);
-
-        Precio precio = new Precio(new BigDecimal("100000"), "COP");
-        Componente componente = Componente.crear(
-                componenteId,
-                "CPU",
-                CategoriaComponente.CPU,
-                new EspecificacionTecnica("AM5", 120, "DDR5"),
-                precio,
-                vendedor,
-                365);
-        UnidadInventario unidad = componente.agregarUnidad(serial);
-        componente.reservarUnidad(unidad.getId());
-        componente.venderUnidad(unidad.getId());
-        componenteRepository.guardar(componente);
-
-        Compra compra = Compra.realizar(compraId, null, compradorId,
-                List.of(new ItemCompra(unidad.getId(), componenteId, serial, precio)));
-        compra.confirmar();
-        compraRepository.guardar(compra);
-
-        return new Escenario(vendedorId, componenteId, compraId, serial, compradorId);
-    }
-
-    private String solicitarRMA(Escenario escenario, String rmaId) throws Exception {
-        MvcResult result = mockMvc.perform(post("/api/rma")
+        mockMvc.perform(post("/api/rma")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("""
                                 {
-                                  "id":"%s",
-                                  "compraId":"%s",
-                                  "numeroSerie":"%s",
-                                  "compradorId":"%s"
+                                  "id":"rma-1",
+                                  "compraId":"compra-1",
+                                  "numeroSerie":"SER-1",
+                                  "compradorId":"comprador-1"
                                 }
-                                """.formatted(rmaId, escenario.compraId(), escenario.serial(),
-                                escenario.compradorId())))
+                                """))
                 .andExpect(status().isCreated())
-                .andExpect(jsonPath("$.estado").value("PENDIENTE"))
-                .andExpect(jsonPath("$.numeroSerie").value(escenario.serial()))
-                .andReturn();
-        return JsonPath.read(result.getResponse().getContentAsString(), "$.id");
-    }
-
-    @Test
-    void elCompradorSolicitaYElVendedorDuenoAceptaLaRMA() throws Exception {
-        Escenario escenario = crearCompraVendida(id("rma"));
-        String rmaId = solicitarRMA(escenario, id("solicitud"));
-
-        mockMvc.perform(get("/api/rma/{id}", rmaId))
-                .andExpect(status().isOk())
-                .andExpect(jsonPath("$.id").value(rmaId))
+                .andExpect(header().string("Location", containsString("/api/rma/rma-1")))
+                .andExpect(jsonPath("$.id").value("rma-1"))
+                .andExpect(jsonPath("$.numeroSerie").value("SER-1"))
                 .andExpect(jsonPath("$.estado").value("PENDIENTE"));
 
-        mockMvc.perform(post("/api/rma/{id}/aceptar", rmaId)
-                        .contentType(MediaType.APPLICATION_JSON)
-                        .content("""
-                                {"vendedorId":"%s"}
-                                """.formatted(escenario.vendedorId())))
-                .andExpect(status().isOk())
-                .andExpect(jsonPath("$.estado").value("ACEPTADA"));
-
-        Componente componente = componenteRepository.buscarPorId(escenario.componenteId())
-                .orElseThrow();
-        assertEquals(EstadoUnidad.EN_RMA, componente.getUnidades().getFirst().getEstado());
+        verify(solicitarRMAUseCase).ejecutar(any());
     }
 
     @Test
-    void unVendedorAjenoNoPuedeResolverYElDuenoPuedeRechazar() throws Exception {
-        Escenario escenario = crearCompraVendida(id("rma"));
-        String rmaId = solicitarRMA(escenario, id("solicitud"));
-
-        mockMvc.perform(post("/api/rma/{id}/aceptar", rmaId)
-                        .contentType(MediaType.APPLICATION_JSON)
-                        .content("""
-                                {"vendedorId":"otro-vendedor"}
-                                """))
-                .andExpect(status().isBadRequest())
-                .andExpect(jsonPath("$.mensaje").value("Solo el vendedor dueño puede operar este componente"));
-
-        mockMvc.perform(post("/api/rma/{id}/rechazar", rmaId)
-                        .contentType(MediaType.APPLICATION_JSON)
-                        .content("""
-                                {"vendedorId":"%s","motivo":"Daño no cubierto"}
-                                """.formatted(escenario.vendedorId())))
-                .andExpect(status().isOk())
-                .andExpect(jsonPath("$.estado").value("RECHAZADA"))
-                .andExpect(jsonPath("$.motivoRechazo").value("Daño no cubierto"));
-
-        Componente componente = componenteRepository.buscarPorId(escenario.componenteId())
-                .orElseThrow();
-        assertEquals(EstadoUnidad.VENDIDA, componente.getUnidades().getFirst().getEstado());
-    }
-
-    @Test
-    void consultarUnaRMAnoExistenteDevuelve404() throws Exception {
-        mockMvc.perform(get("/api/rma/{id}", "rma-inexistente"))
-                .andExpect(status().isNotFound())
-                .andExpect(jsonPath("$.mensaje").value("No existe una SolicitudRMA con ese identificador"));
-    }
-
-    @Test
-    void solicitarRMASinNumeroSerieDevuelve400() throws Exception {
+    void debeRetornar400CuandoFaltaElNumeroDeSerie() throws Exception {
         mockMvc.perform(post("/api/rma")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("""
                                 {"id":"rma-1","compraId":"compra-1","compradorId":"comprador-1"}
                                 """))
                 .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.mensaje", containsString("numeroSerie")));
+
+        verifyNoInteractions(solicitarRMAUseCase);
+    }
+
+    @Test
+    void debeConsultarUnaRMAExistente() throws Exception {
+        when(consultarRMAUseCase.ejecutar("rma-1")).thenReturn(solicitudPendiente());
+
+        mockMvc.perform(get("/api/rma/{id}", "rma-1"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.id").value("rma-1"))
+                .andExpect(jsonPath("$.estado").value("PENDIENTE"));
+    }
+
+    @Test
+    void debeRetornar404CuandoLaRMAnoExiste() throws Exception {
+        when(consultarRMAUseCase.ejecutar("rma-inexistente"))
+                .thenThrow(new RecursoNoEncontradoException("No existe la solicitud RMA"));
+
+        mockMvc.perform(get("/api/rma/{id}", "rma-inexistente"))
+                .andExpect(status().isNotFound())
+                .andExpect(jsonPath("$.mensaje").value("No existe la solicitud RMA"));
+    }
+
+    @Test
+    void debeListarLasSolicitudesRMA() throws Exception {
+        when(listarRMAUseCase.ejecutar()).thenReturn(List.of(solicitudPendiente()));
+
+        mockMvc.perform(get("/api/rma"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$[0].id").value("rma-1"));
+    }
+
+    @Test
+    void elVendedorDuenoDebeAceptarLaRMA() throws Exception {
+        SolicitudRMA solicitud = solicitudPendiente();
+        solicitud.aceptar();
+        when(aceptarRMAUseCase.ejecutar("rma-1", "v-1")).thenReturn(solicitud);
+
+        mockMvc.perform(post("/api/rma/{id}/aceptar", "rma-1")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                {"vendedorId":"v-1"}
+                                """))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.estado").value("ACEPTADA"));
+
+        verify(aceptarRMAUseCase).ejecutar("rma-1", "v-1");
+    }
+
+    @Test
+    void debeRetornar400CuandoUnVendedorAjenoIntentaAceptar() throws Exception {
+        when(aceptarRMAUseCase.ejecutar("rma-1", "otro"))
+                .thenThrow(new ReglaDominioException("Solo el vendedor dueño puede operar este componente"));
+
+        mockMvc.perform(post("/api/rma/{id}/aceptar", "rma-1")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                {"vendedorId":"otro"}
+                                """))
+                .andExpect(status().isBadRequest())
                 .andExpect(jsonPath("$.mensaje").value(
-                        "numeroSerie: El número de serie es necesario"));
+                        "Solo el vendedor dueño puede operar este componente"));
+    }
+
+    @Test
+    void elVendedorDuenoDebeRechazarLaRMAConMotivo() throws Exception {
+        SolicitudRMA solicitud = solicitudPendiente();
+        solicitud.rechazar("Daño no cubierto");
+        when(rechazarRMAUseCase.ejecutar("rma-1", "v-1", "Daño no cubierto"))
+                .thenReturn(solicitud);
+
+        mockMvc.perform(post("/api/rma/{id}/rechazar", "rma-1")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                {"vendedorId":"v-1","motivo":"Daño no cubierto"}
+                                """))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.estado").value("RECHAZADA"))
+                .andExpect(jsonPath("$.motivoRechazo").value("Daño no cubierto"));
+
+        verify(rechazarRMAUseCase).ejecutar("rma-1", "v-1", "Daño no cubierto");
+    }
+
+    @Test
+    void debeRetornar400CuandoElRechazoNoTieneMotivo() throws Exception {
+        mockMvc.perform(post("/api/rma/{id}/rechazar", "rma-1")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                {"vendedorId":"v-1"}
+                                """))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.mensaje", containsString("motivo")));
+
+        verifyNoInteractions(rechazarRMAUseCase);
+    }
+
+    private SolicitudRMA solicitudPendiente() {
+        return SolicitudRMA.crear(
+                "rma-1",
+                "comp-1",
+                "compra-1",
+                "SER-1",
+                "comprador-1",
+                LocalDate.now().minusDays(10),
+                365,
+                LocalDate.now()
+        );
     }
 }
