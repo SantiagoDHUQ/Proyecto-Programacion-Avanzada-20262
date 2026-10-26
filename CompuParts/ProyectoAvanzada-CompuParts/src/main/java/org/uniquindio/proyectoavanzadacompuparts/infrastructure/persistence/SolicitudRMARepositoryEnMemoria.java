@@ -38,4 +38,14 @@ public class SolicitudRMARepositoryEnMemoria implements SolicitudRMARepository {
                 .anyMatch(s -> s.getNumeroSerie().equalsIgnoreCase(numeroSerie.trim())
                         && s.getEstado() == EstadoSolicitudRMA.PENDIENTE);
     }
+
+    @Override
+    public boolean existeAceptadaPorNumeroSerie(String numeroSerie) {
+        if (numeroSerie == null || numeroSerie.isBlank()) {
+            return false;
+        }
+        return almacenamiento.values().stream()
+                .anyMatch(s -> s.getNumeroSerie().equalsIgnoreCase(numeroSerie.trim())
+                        && s.getEstado() == EstadoSolicitudRMA.ACEPTADA);
+    }
 }

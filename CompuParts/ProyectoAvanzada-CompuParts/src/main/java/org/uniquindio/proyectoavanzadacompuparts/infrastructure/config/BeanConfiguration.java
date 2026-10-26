@@ -30,6 +30,7 @@ import org.uniquindio.proyectoavanzadacompuparts.application.usecase.RechazarRMA
 import org.uniquindio.proyectoavanzadacompuparts.application.usecase.RecibirPreventaUseCase;
 import org.uniquindio.proyectoavanzadacompuparts.application.usecase.RegistrarComponenteUseCase;
 import org.uniquindio.proyectoavanzadacompuparts.application.usecase.RegistrarVendedorUseCase;
+import org.uniquindio.proyectoavanzadacompuparts.application.usecase.ReembolsarCompraUseCase;
 import org.uniquindio.proyectoavanzadacompuparts.application.usecase.ReservarPreventaUseCase;
 import org.uniquindio.proyectoavanzadacompuparts.application.usecase.SolicitarRMAUseCase;
 import org.uniquindio.proyectoavanzadacompuparts.application.usecase.ValidarCompatibilidadBuildUseCase;
@@ -265,6 +266,14 @@ public class BeanConfiguration {
     @Bean
     public ConsultarCompraUseCase consultarCompraUseCase(CompraRepository compraRepository) {
         return new ConsultarCompraUseCase(compraRepository);
+    }
+
+    @Bean
+    public ReembolsarCompraUseCase reembolsarCompraUseCase(
+            CompraRepository compraRepository,
+            ComponenteRepository componenteRepository,
+            SolicitudRMARepository solicitudRMARepository) {
+        return new ReembolsarCompraUseCase(compraRepository, componenteRepository, solicitudRMARepository);
     }
 
     @Bean

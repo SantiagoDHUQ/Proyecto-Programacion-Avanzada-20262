@@ -17,6 +17,7 @@ import org.uniquindio.proyectoavanzadacompuparts.domain.repository.CompraReposit
 import org.uniquindio.proyectoavanzadacompuparts.domain.repository.VendedorRepository;
 import org.uniquindio.proyectoavanzadacompuparts.domain.valueobject.CategoriaComponente;
 import org.uniquindio.proyectoavanzadacompuparts.domain.valueobject.EspecificacionTecnica;
+import org.uniquindio.proyectoavanzadacompuparts.domain.valueobject.EstadoCompra;
 import org.uniquindio.proyectoavanzadacompuparts.domain.valueobject.EstadoUnidad;
 import org.uniquindio.proyectoavanzadacompuparts.domain.valueobject.ItemCompra;
 import org.uniquindio.proyectoavanzadacompuparts.domain.valueobject.Precio;
@@ -154,6 +155,54 @@ public class RMAApiIntegrationTest {
         Componente componente = componenteRepository.buscarPorId(escenario.componenteId())
                 .orElseThrow();
         assertEquals(EstadoUnidad.VENDIDA, componente.getUnidades().getFirst().getEstado());
+    }
+
+    @Test
+    void elCompradorReembolsaLaCompraTrasLaRMAAceptadaYLaUnidadSeDescarta() throws Exception {
+        Escenario escenario = crearCompraVendida(id("reembolso"));
+        String rmaId = solicitarRMA(escenario, id("solicitud"));
+
+        mockMvc.perform(post("/api/rma/{id}/aceptar", rmaId)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                {"vendedorId":"%s"}
+                                """.formatted(escenario.vendedorId())))
+                .andExpect(status().isOk());
+
+        mockMvc.perform(post("/api/compras/{id}/reembolsar", escenario.compraId())
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                {"compradorId":"%s","motivo":"Falla de fábrica"}
+                                """.formatted(escenario.compradorId())))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.estado").value("REEMBOLSADA"));
+
+        Componente componente = componenteRepository.buscarPorId(escenario.componenteId())
+                .orElseThrow();
+        assertEquals(EstadoUnidad.DESCARTADA, componente.getUnidades().getFirst().getEstado());
+    }
+
+    @Test
+    void noSePuedeReembolsarUnaCompraConRMAPendiente() throws Exception {
+        Escenario escenario = crearCompraVendida(id("reembolso-pendiente"));
+        solicitarRMA(escenario, id("solicitud"));
+        assertEquals(EstadoUnidad.EN_RMA,
+                componenteRepository.buscarPorId(escenario.componenteId())
+                        .orElseThrow().getUnidades().getFirst().getEstado());
+
+        mockMvc.perform(post("/api/compras/{id}/reembolsar", escenario.compraId())
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                {"compradorId":"%s","motivo":"Falla de fábrica"}
+                                """.formatted(escenario.compradorId())))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.mensaje").value(
+                        "La unidad " + escenario.serial() + " tiene una SolicitudRMA pendiente"));
+
+        assertEquals(EstadoUnidad.EN_RMA, componenteRepository.buscarPorId(escenario.componenteId())
+                .orElseThrow().getUnidades().getFirst().getEstado());
+        assertEquals(EstadoCompra.COMPLETADA,
+                compraRepository.buscarPorId(escenario.compraId()).orElseThrow().getEstado());
     }
 
     @Test

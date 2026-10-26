@@ -87,11 +87,22 @@ Flujo de compra directa de una preventa:
 | Consultar compra | `ConsultarCompraUseCase` | `GET /api/compras/{id}` |
 | `Compra.confirmar()` | `ConfirmarCompraUseCase` | `POST /api/compras/{id}/confirmar` |
 | `Compra.cancelar()` | `CancelarCompraUseCase` | `POST /api/compras/{id}/cancelar` |
+| `Compra.solicitarReembolso()` | `ReembolsarCompraUseCase` | `POST /api/compras/{id}/reembolsar` |
 
 Estados de la compra: `PENDIENTE`, `COMPLETADA`, `CANCELADA`, `REEMBOLSADA`.
 Una compra `PENDIENTE` reserva el stock; `CANCELADA` lo libera y `REEMBOLSADA`
-descarta las unidades vendidas. El reembolso se gestionará en un bloque posterior
-a partir de una RMA aceptada.
+descarta las unidades vendidas. Solo el comprador puede reembolsar una compra
+`COMPLETADA` cuando todas sus unidades tienen una RMA `ACEPTADA`; el reembolso
+es definitivo y las unidades pasan a `DESCARTADA`.
+
+Ejemplo de reembolso:
+
+```json
+{
+  "compradorId": "comprador-1",
+  "motivo": "Falla de fábrica confirmada en RMA"
+}
+```
 
 ## Build
 
@@ -124,8 +135,9 @@ crearse, la unidad pasa a `EN_RMA`.
 
 Solo el vendedor dueño del componente puede aceptar o rechazar la solicitud
 (regla 9). Aceptar deja la unidad en `EN_RMA`; rechazar exige un motivo y la
-devuelve a `VENDIDA`. El reembolso y el descarte de la unidad se gestionan en un
-bloque posterior.
+devuelve a `VENDIDA`. Después de la aceptación, el comprador puede reembolsar la
+compra con `POST /api/compras/{id}/reembolsar`; al hacerlo, todas las unidades
+con RMA aceptada se descartan.
 
 Ejemplo de solicitud:
 

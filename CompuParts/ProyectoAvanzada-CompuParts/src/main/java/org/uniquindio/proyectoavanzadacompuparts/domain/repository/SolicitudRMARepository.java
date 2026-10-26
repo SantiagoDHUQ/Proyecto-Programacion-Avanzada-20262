@@ -18,4 +18,7 @@ public interface SolicitudRMARepository {
 
     /** Apoya la regla entre agregados: no puede haber dos solicitudes PENDIENTES para la misma unidad. */
     boolean existePendientePorNumeroSerie(String numeroSerie);
+
+    /** Indica si la unidad ya tiene una solicitud aceptada, requisito para reembolsar la compra. */
+    boolean existeAceptadaPorNumeroSerie(String numeroSerie);
 }

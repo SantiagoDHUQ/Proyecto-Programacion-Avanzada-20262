@@ -10,17 +10,20 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.servlet.support.ServletUriComponentsBuilder;
 import org.uniquindio.proyectoavanzadacompuparts.application.dto.request.RealizarCompraRequest;
+import org.uniquindio.proyectoavanzadacompuparts.application.dto.request.ReembolsarCompraRequest;
 import org.uniquindio.proyectoavanzadacompuparts.application.dto.response.CompraResponse;
 import org.uniquindio.proyectoavanzadacompuparts.application.usecase.CancelarCompraUseCase;
 import org.uniquindio.proyectoavanzadacompuparts.application.usecase.ConfirmarCompraUseCase;
 import org.uniquindio.proyectoavanzadacompuparts.application.usecase.ConsultarCompraUseCase;
 import org.uniquindio.proyectoavanzadacompuparts.application.usecase.RealizarCompraUseCase;
+import org.uniquindio.proyectoavanzadacompuparts.application.usecase.ReembolsarCompraUseCase;
 import org.uniquindio.proyectoavanzadacompuparts.domain.entity.Compra;
 
 import java.net.URI;
 
 /**
- * API de compras: crear (reserva stock), confirmar (vende) y cancelar (libera).
+ * API de compras: crear (reserva stock), confirmar (vende), cancelar (libera)
+ * y reembolsar una compra completada con RMA aceptada (descarta las unidades).
  */
 @RestController
 @RequestMapping("/api/compras")
@@ -30,15 +33,18 @@ public class CompraController {
     private final ConfirmarCompraUseCase confirmarCompraUseCase;
     private final CancelarCompraUseCase cancelarCompraUseCase;
     private final ConsultarCompraUseCase consultarCompraUseCase;
+    private final ReembolsarCompraUseCase reembolsarCompraUseCase;
 
     public CompraController(RealizarCompraUseCase realizarCompraUseCase,
                             ConfirmarCompraUseCase confirmarCompraUseCase,
                             CancelarCompraUseCase cancelarCompraUseCase,
-                            ConsultarCompraUseCase consultarCompraUseCase) {
+                            ConsultarCompraUseCase consultarCompraUseCase,
+                            ReembolsarCompraUseCase reembolsarCompraUseCase) {
         this.realizarCompraUseCase = realizarCompraUseCase;
         this.confirmarCompraUseCase = confirmarCompraUseCase;
         this.cancelarCompraUseCase = cancelarCompraUseCase;
         this.consultarCompraUseCase = consultarCompraUseCase;
+        this.reembolsarCompraUseCase = reembolsarCompraUseCase;
     }
 
     @PostMapping
@@ -64,5 +70,12 @@ public class CompraController {
     @PostMapping("/{id}/cancelar")
     public ResponseEntity<CompraResponse> cancelar(@PathVariable String id) {
         return ResponseEntity.ok(CompraResponse.from(cancelarCompraUseCase.ejecutar(id)));
+    }
+
+    @PostMapping("/{id}/reembolsar")
+    public ResponseEntity<CompraResponse> reembolsar(@PathVariable String id,
+                                                     @Valid @RequestBody ReembolsarCompraRequest request) {
+        return ResponseEntity.ok(CompraResponse.from(
+                reembolsarCompraUseCase.ejecutar(id, request.compradorId(), request.motivo())));
     }
 }

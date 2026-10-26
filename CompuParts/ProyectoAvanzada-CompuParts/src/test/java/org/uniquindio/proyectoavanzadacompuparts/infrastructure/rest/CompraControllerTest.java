@@ -11,6 +11,7 @@ import org.uniquindio.proyectoavanzadacompuparts.application.usecase.CancelarCom
 import org.uniquindio.proyectoavanzadacompuparts.application.usecase.ConfirmarCompraUseCase;
 import org.uniquindio.proyectoavanzadacompuparts.application.usecase.ConsultarCompraUseCase;
 import org.uniquindio.proyectoavanzadacompuparts.application.usecase.RealizarCompraUseCase;
+import org.uniquindio.proyectoavanzadacompuparts.application.usecase.ReembolsarCompraUseCase;
 import org.uniquindio.proyectoavanzadacompuparts.domain.entity.Compra;
 import org.uniquindio.proyectoavanzadacompuparts.domain.valueobject.ItemCompra;
 import org.uniquindio.proyectoavanzadacompuparts.domain.valueobject.Precio;
@@ -49,6 +50,9 @@ class CompraControllerTest {
 
     @MockitoBean
     private ConsultarCompraUseCase consultarCompraUseCase;
+
+    @MockitoBean
+    private ReembolsarCompraUseCase reembolsarCompraUseCase;
 
     @Test
     void debeCrearUnaCompraCuandoLosDatosSonValidos() throws Exception {
@@ -130,6 +134,39 @@ class CompraControllerTest {
                 .andExpect(jsonPath("$.estado").value("CANCELADA"));
 
         verify(cancelarCompraUseCase).ejecutar("compra-1");
+    }
+
+    @Test
+    void debeReembolsarUnaCompraCompletada() throws Exception {
+        Compra compra = compraPendiente();
+        compra.confirmar();
+        compra.solicitarReembolso("Falla de fábrica");
+        when(reembolsarCompraUseCase.ejecutar("compra-1", "comprador-1", "Falla de fábrica"))
+                .thenReturn(compra);
+
+        mockMvc.perform(post("/api/compras/{id}/reembolsar", "compra-1")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                {"compradorId":"comprador-1","motivo":"Falla de fábrica"}
+                                """))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.id").value("compra-1"))
+                .andExpect(jsonPath("$.estado").value("REEMBOLSADA"));
+
+        verify(reembolsarCompraUseCase).ejecutar("compra-1", "comprador-1", "Falla de fábrica");
+    }
+
+    @Test
+    void debeRetornar400CuandoFaltaElMotivoDelReembolso() throws Exception {
+        mockMvc.perform(post("/api/compras/{id}/reembolsar", "compra-1")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                {"compradorId":"comprador-1","motivo":""}
+                                """))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.mensaje", containsString("motivo")));
+
+        verifyNoInteractions(reembolsarCompraUseCase);
     }
 
     private Compra compraPendiente() {
