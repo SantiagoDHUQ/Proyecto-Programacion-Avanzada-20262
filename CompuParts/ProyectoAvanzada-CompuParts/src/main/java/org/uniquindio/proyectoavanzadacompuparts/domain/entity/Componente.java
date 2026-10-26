@@ -117,6 +117,16 @@ public class Componente {
                 .orElseThrow(() -> new ReglaDominioException("No existe esa unidad en el componente"));
     }
 
+    public UnidadInventario unidadPorNumeroSerie(String numeroSerie) {
+        exigir(numeroSerie != null && !numeroSerie.isBlank(), "El número de serie es obligatorio");
+        return unidades.stream()
+                .filter(unidad -> unidad.getNumeroSerie() != null
+                        && unidad.getNumeroSerie().equalsIgnoreCase(numeroSerie.trim()))
+                .findFirst()
+                .orElseThrow(() -> new ReglaDominioException(
+                        "No existe una unidad con ese número de serie en el componente"));
+    }
+
     public UnidadInventario reservarUnidad(UUID unidadId) {
         UnidadInventario unidad = unidadPorId(unidadId);
         unidad.reservarParaCompra();

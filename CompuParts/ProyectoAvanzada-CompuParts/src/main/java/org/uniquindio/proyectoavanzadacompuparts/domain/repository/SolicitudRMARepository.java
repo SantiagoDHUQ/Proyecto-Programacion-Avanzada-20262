@@ -16,6 +16,6 @@ public interface SolicitudRMARepository {
 
     List<SolicitudRMA> listarTodos();
 
-    /** Apoya la regla entre agregados: no puede haber dos solicitudes PENDIENTES para el mismo componente. */
-    boolean existePendientePorComponente(String componenteId);
+    /** Apoya la regla entre agregados: no puede haber dos solicitudes PENDIENTES para la misma unidad. */
+    boolean existePendientePorNumeroSerie(String numeroSerie);
 }

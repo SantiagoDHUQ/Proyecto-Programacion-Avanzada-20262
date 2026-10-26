@@ -2,6 +2,7 @@ package org.uniquindio.proyectoavanzadacompuparts.infrastructure.config;
 
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.uniquindio.proyectoavanzadacompuparts.application.usecase.AceptarRMAUseCase;
 import org.uniquindio.proyectoavanzadacompuparts.application.usecase.AgregarComponenteABuildUseCase;
 import org.uniquindio.proyectoavanzadacompuparts.application.usecase.AgregarUnidadUseCase;
 import org.uniquindio.proyectoavanzadacompuparts.application.usecase.CancelarCompraUseCase;
@@ -11,6 +12,7 @@ import org.uniquindio.proyectoavanzadacompuparts.application.usecase.ConfirmarCo
 import org.uniquindio.proyectoavanzadacompuparts.application.usecase.ConsultarBuildUseCase;
 import org.uniquindio.proyectoavanzadacompuparts.application.usecase.ConsultarComponenteUseCase;
 import org.uniquindio.proyectoavanzadacompuparts.application.usecase.ConsultarCompraUseCase;
+import org.uniquindio.proyectoavanzadacompuparts.application.usecase.ConsultarRMAUseCase;
 import org.uniquindio.proyectoavanzadacompuparts.application.usecase.ConsultarReservaPreventaUseCase;
 import org.uniquindio.proyectoavanzadacompuparts.application.usecase.ConsultarUnidadUseCase;
 import org.uniquindio.proyectoavanzadacompuparts.application.usecase.ConsultarVendedorUseCase;
@@ -19,10 +21,12 @@ import org.uniquindio.proyectoavanzadacompuparts.application.usecase.PublicarCom
 import org.uniquindio.proyectoavanzadacompuparts.application.usecase.PublicarPreventaUseCase;
 import org.uniquindio.proyectoavanzadacompuparts.application.usecase.EliminarComponenteUseCase;
 import org.uniquindio.proyectoavanzadacompuparts.application.usecase.ListarComponentesUseCase;
+import org.uniquindio.proyectoavanzadacompuparts.application.usecase.ListarRMAUseCase;
 import org.uniquindio.proyectoavanzadacompuparts.application.usecase.ListarVendedoresUseCase;
 import org.uniquindio.proyectoavanzadacompuparts.application.usecase.MarcarBuildListoParaCompraUseCase;
 import org.uniquindio.proyectoavanzadacompuparts.application.usecase.MarcarComponenteAgotadoUseCase;
 import org.uniquindio.proyectoavanzadacompuparts.application.usecase.RealizarCompraUseCase;
+import org.uniquindio.proyectoavanzadacompuparts.application.usecase.RechazarRMAUseCase;
 import org.uniquindio.proyectoavanzadacompuparts.application.usecase.RecibirPreventaUseCase;
 import org.uniquindio.proyectoavanzadacompuparts.application.usecase.RegistrarComponenteUseCase;
 import org.uniquindio.proyectoavanzadacompuparts.application.usecase.RegistrarVendedorUseCase;
@@ -203,9 +207,34 @@ public class BeanConfiguration {
 
     @Bean
     public SolicitarRMAUseCase solicitarRMAUseCase(
+            CompraRepository compraRepository,
             ComponenteRepository componenteRepository,
-            VendedorRepository vendedorRepository) {
-        return new SolicitarRMAUseCase(componenteRepository, vendedorRepository);
+            SolicitudRMARepository solicitudRMARepository) {
+        return new SolicitarRMAUseCase(compraRepository, componenteRepository, solicitudRMARepository);
+    }
+
+    @Bean
+    public AceptarRMAUseCase aceptarRMAUseCase(
+            SolicitudRMARepository solicitudRMARepository,
+            ComponenteRepository componenteRepository) {
+        return new AceptarRMAUseCase(solicitudRMARepository, componenteRepository);
+    }
+
+    @Bean
+    public RechazarRMAUseCase rechazarRMAUseCase(
+            SolicitudRMARepository solicitudRMARepository,
+            ComponenteRepository componenteRepository) {
+        return new RechazarRMAUseCase(solicitudRMARepository, componenteRepository);
+    }
+
+    @Bean
+    public ConsultarRMAUseCase consultarRMAUseCase(SolicitudRMARepository solicitudRMARepository) {
+        return new ConsultarRMAUseCase(solicitudRMARepository);
+    }
+
+    @Bean
+    public ListarRMAUseCase listarRMAUseCase(SolicitudRMARepository solicitudRMARepository) {
+        return new ListarRMAUseCase(solicitudRMARepository);
     }
 
     @Bean

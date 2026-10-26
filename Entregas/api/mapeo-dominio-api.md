@@ -11,7 +11,8 @@ Esta API usa el modelo B: un `Componente` es el SKU/anuncio y cada
   comprador con `compradorId` en el cuerpo de la petición. En `DELETE` el actor
   se envía como query param (`vendedorId` o `compradorId`).
 - Regla 9: solo el vendedor dueño del componente puede agregar unidades,
-  publicar/recibir preventas, marcarlo agotado, volver a publicarlo o eliminarlo.
+  publicar/recibir preventas, marcarlo agotado, volver a publicarlo, eliminarlo
+  o resolver una RMA.
 - "Eliminar" es un borrado lógico: el componente pasa a `ELIMINADO` y conserva
   sus unidades e historial.
 - Los estados finales de una compra (`CANCELADA`, `REEMBOLSADA`) no se pueden
@@ -89,7 +90,8 @@ Flujo de compra directa de una preventa:
 
 Estados de la compra: `PENDIENTE`, `COMPLETADA`, `CANCELADA`, `REEMBOLSADA`.
 Una compra `PENDIENTE` reserva el stock; `CANCELADA` lo libera y `REEMBOLSADA`
-descarta las unidades vendidas. El reembolso se gestionará junto con el RMA.
+descarta las unidades vendidas. El reembolso se gestionará en un bloque posterior
+a partir de una RMA aceptada.
 
 ## Build
 
@@ -107,6 +109,46 @@ marca el Build como `COMPRADO`; un Build comprado o cancelado ya no se modifica.
 
 ## RMA
 
-Pendiente para el siguiente bloque. La regla 9 exige que solo el vendedor dueño
-del componente opere y resuelva el RMA; estos endpoints aún no se exponen en la
-API.
+| Operación del dominio | Caso de uso | Método HTTP / Endpoint |
+|---|---|---|
+| `SolicitudRMA.crear()` | `SolicitarRMAUseCase` | `POST /api/rma` |
+| Consultar solicitud | `ConsultarRMAUseCase` | `GET /api/rma/{id}` |
+| Listar solicitudes | `ListarRMAUseCase` | `GET /api/rma` |
+| `SolicitudRMA.aceptar()` | `AceptarRMAUseCase` | `POST /api/rma/{id}/aceptar` |
+| `SolicitudRMA.rechazar()` | `RechazarRMAUseCase` | `POST /api/rma/{id}/rechazar` |
+
+El comprador solicita el RMA sobre una unidad concreta de una compra
+`COMPLETADA`, identificándola por su número de serie. Debe estar dentro de la
+garantía y no puede existir otra solicitud `PENDIENTE` para esa unidad. Al
+crearse, la unidad pasa a `EN_RMA`.
+
+Solo el vendedor dueño del componente puede aceptar o rechazar la solicitud
+(regla 9). Aceptar deja la unidad en `EN_RMA`; rechazar exige un motivo y la
+devuelve a `VENDIDA`. El reembolso y el descarte de la unidad se gestionan en un
+bloque posterior.
+
+Ejemplo de solicitud:
+
+```json
+{
+  "id": "rma-1",
+  "compraId": "compra-1",
+  "numeroSerie": "SER-123",
+  "compradorId": "comprador-1",
+  "fechaSolicitud": null
+}
+```
+
+`fechaSolicitud` es opcional; si se omite se usa la fecha actual.
+
+Para aceptar, el vendedor dueño envía:
+
+```json
+{"vendedorId": "vendedor-1"}
+```
+
+Para rechazar, además del vendedor, debe enviar el motivo:
+
+```json
+{"vendedorId": "vendedor-1", "motivo": "Daño no cubierto por la garantía"}
+```

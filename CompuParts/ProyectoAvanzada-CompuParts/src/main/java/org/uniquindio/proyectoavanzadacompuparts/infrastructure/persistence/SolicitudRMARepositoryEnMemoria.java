@@ -30,9 +30,12 @@ public class SolicitudRMARepositoryEnMemoria implements SolicitudRMARepository {
     }
 
     @Override
-    public boolean existePendientePorComponente(String componenteId) {
+    public boolean existePendientePorNumeroSerie(String numeroSerie) {
+        if (numeroSerie == null || numeroSerie.isBlank()) {
+            return false;
+        }
         return almacenamiento.values().stream()
-                .anyMatch(s -> s.getComponenteId().equals(componenteId)
+                .anyMatch(s -> s.getNumeroSerie().equalsIgnoreCase(numeroSerie.trim())
                         && s.getEstado() == EstadoSolicitudRMA.PENDIENTE);
     }
 }

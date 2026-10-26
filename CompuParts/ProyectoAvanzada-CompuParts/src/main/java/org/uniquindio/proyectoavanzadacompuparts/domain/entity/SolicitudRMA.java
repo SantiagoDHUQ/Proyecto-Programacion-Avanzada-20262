@@ -22,6 +22,7 @@ public class SolicitudRMA {
     private final String id;
     private final String componenteId;
     private final String compraId;
+    private final String numeroSerie;
     private final String compradorId;
     private final LocalDate fechaCompra;
     private final int duracionGarantia;      // en días
@@ -29,11 +30,13 @@ public class SolicitudRMA {
     private EstadoSolicitudRMA estado;
     private String motivoRechazo;
 
-    private SolicitudRMA(String id, String componenteId, String compraId, String compradorId,
-                         LocalDate fechaCompra, int duracionGarantia, LocalDate fechaSolicitud) {
+    private SolicitudRMA(String id, String componenteId, String compraId, String numeroSerie,
+                         String compradorId, LocalDate fechaCompra, int duracionGarantia,
+                         LocalDate fechaSolicitud) {
         this.id = id;
         this.componenteId = componenteId;
         this.compraId = compraId;
+        this.numeroSerie = numeroSerie.trim();
         this.compradorId = compradorId;
         this.fechaCompra = fechaCompra;
         this.duracionGarantia = duracionGarantia;
@@ -42,12 +45,13 @@ public class SolicitudRMA {
     }
 
     // Único punto de entrada: valida ANTES de existir
-    public static SolicitudRMA crear(String id, String componenteId, String compraId,
-                                     LocalDate fechaCompra, int duracionGarantia,
-                                     String compradorId, LocalDate fechaSolicitud) {
+    public static SolicitudRMA crear(String id, String componenteId, String compraId, String numeroSerie,
+                                     String compradorId, LocalDate fechaCompra, int duracionGarantia,
+                                     LocalDate fechaSolicitud) {
         exigirTexto(id, "El identificador de la SolicitudRMA es obligatorio");
         exigirTexto(componenteId, "La SolicitudRMA debe indicar el componente");
         exigirTexto(compraId, "La SolicitudRMA debe indicar la compra");
+        exigirTexto(numeroSerie, "La SolicitudRMA debe indicar el número de serie de la unidad");
         exigirTexto(compradorId, "La SolicitudRMA debe indicar el comprador");
         if (fechaCompra == null) {
             throw new ReglaDominioException("La fecha de compra es obligatoria");
@@ -65,7 +69,8 @@ public class SolicitudRMA {
         if (!fechaSolicitud.isBefore(fechaCompra.plusDays(duracionGarantia))) {
             throw new ReglaDominioException("La SolicitudRMA no puede crearse después del vencimiento de la garantía");
         }
-        return new SolicitudRMA(id, componenteId, compraId, compradorId, fechaCompra, duracionGarantia, fechaSolicitud);
+        return new SolicitudRMA(id, componenteId, compraId, numeroSerie, compradorId,
+                fechaCompra, duracionGarantia, fechaSolicitud);
     }
 
     // Cada método valida PRIMERO, cambia el estado DESPUÉS.
@@ -82,6 +87,10 @@ public class SolicitudRMA {
         verificarTransicion(EstadoSolicitudRMA.RECHAZADA);
         this.estado = EstadoSolicitudRMA.RECHAZADA;
         this.motivoRechazo = motivo;
+    }
+
+    public boolean estaPendiente() {
+        return estado == EstadoSolicitudRMA.PENDIENTE;
     }
 
     private void verificarTransicion(EstadoSolicitudRMA siguiente) {

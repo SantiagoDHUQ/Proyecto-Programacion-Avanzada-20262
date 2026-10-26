@@ -13,9 +13,11 @@ public class SolicitudRMATest {
     //Arrange general
     private static final LocalDate COMPRA = LocalDate.of(2026, 1, 1);
     private static final int GARANTIA = 30;
+    private static final String SERIAL = "SER-1";
 
     private SolicitudRMA solicitud(String id, LocalDate fechaSolicitud) {
-        return SolicitudRMA.crear(id, "comp-1", "compra-1", COMPRA, GARANTIA, "comprador-1", fechaSolicitud);
+        return SolicitudRMA.crear(id, "comp-1", "compra-1", SERIAL, "comprador-1",
+                COMPRA, GARANTIA, fechaSolicitud);
     }
 
     @Test
@@ -24,8 +26,17 @@ public class SolicitudRMATest {
         SolicitudRMA rma = solicitud("rma-1", COMPRA.plusDays(10));
         //Act & Assert
         assertEquals(EstadoSolicitudRMA.PENDIENTE, rma.getEstado());
+        assertTrue(rma.estaPendiente());
         assertEquals("comp-1", rma.getComponenteId());
         assertEquals("compra-1", rma.getCompraId());
+        assertEquals(SERIAL, rma.getNumeroSerie());
+    }
+
+    @Test
+    void solicitudSinNumeroSerieDebeLanzarReglaDominioException() {
+        assertThrows(ReglaDominioException.class, () -> SolicitudRMA.crear(
+                "rma-1", "comp-1", "compra-1", "  ", "comprador-1",
+                COMPRA, GARANTIA, COMPRA.plusDays(10)));
     }
 
     @Test
