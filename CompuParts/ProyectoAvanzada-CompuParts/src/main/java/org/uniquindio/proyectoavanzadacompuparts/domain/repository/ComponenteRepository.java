@@ -15,5 +15,11 @@ public interface ComponenteRepository {
 
     List<Componente> listarTodos();
 
+    /**
+     * Indica si el número de serie ya existe en cualquier unidad del catálogo.
+     * La unicidad del serial es global, no solo dentro de un Componente.
+     */
+    boolean existeNumeroSerie(String numeroSerie);
+
     void eliminar(String id);
 }

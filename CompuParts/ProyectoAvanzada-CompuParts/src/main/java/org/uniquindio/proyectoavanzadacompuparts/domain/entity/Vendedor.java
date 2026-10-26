@@ -24,9 +24,9 @@ public class Vendedor {
     private final TipoVendedor tipo;
 
     private Vendedor(String id, String nombre, TipoVendedor tipo) {
-        exigir(id != null && !id.isBlank(), "El identificador del vendedor no puede ser nulo");
-        exigir(nombre != null && !nombre.isBlank(), "El nombre del vendedor no puede ser nulo");
-        exigir(tipo != null, "El tipo del vendedor no puede ser nulo");
+        exigir(id != null && !id.isBlank(), "El identificador no puede estar vacío");
+        exigir(nombre != null && !nombre.isBlank(), "El nombre no puede estar vacío");
+        exigir(tipo != null, "El tipo no puede estar vacío");
         this.id = id;
         this.nombre = nombre;
         this.tipo = tipo;

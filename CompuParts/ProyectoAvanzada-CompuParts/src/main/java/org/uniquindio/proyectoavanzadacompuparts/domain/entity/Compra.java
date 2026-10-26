@@ -3,66 +3,99 @@ package org.uniquindio.proyectoavanzadacompuparts.domain.entity;
 import lombok.Getter;
 import org.uniquindio.proyectoavanzadacompuparts.domain.exception.ReglaDominioException;
 import org.uniquindio.proyectoavanzadacompuparts.domain.valueobject.EstadoCompra;
+import org.uniquindio.proyectoavanzadacompuparts.domain.valueobject.ItemCompra;
 import org.uniquindio.proyectoavanzadacompuparts.domain.valueobject.Precio;
 
 import java.time.LocalDateTime;
+import java.util.List;
 import java.util.Objects;
-
 import java.util.UUID;
+
+import static org.uniquindio.proyectoavanzadacompuparts.domain.exception.ReglaDominioException.exigir;
 
 /**
  * Raíz del agregado Compra.
  *
- * Invariantes que garantiza:
- *  - toda compra nace en estado PENDIENTE;
- *  - el precio queda congelado al momento de comprar (no cambia aunque el
- *    modelo suba de precio después);
- *  - solo se transita entre estados permitidos por el ciclo de vida;
- *  - una compra reembolsada no admite ninguna modificación.
+ * <p>Una compra agrupa unidades físicas concretas (ítems). Cada ítem conserva
+ * el número de serie y el precio del momento de la compra.</p>
+ *
+ * <p>Invariantes que garantiza:</p>
+ * <ul>
+ *   <li>Toda compra nace en estado PENDIENTE.</li>
+ *   <li>Una compra debe tener al menos un ítem y no puede repetir una unidad.</li>
+ *   <li>El precio total queda congelado al momento de comprar.</li>
+ *   <li>PENDIENTE puede pasar a COMPLETADA o CANCELADA.</li>
+ *   <li>COMPLETADA puede pasar a REEMBOLSADA.</li>
+ *   <li>CANCELADA y REEMBOLSADA son estados finales.</li>
+ * </ul>
+ *
+ * <p>El agregado Compra no conoce el inventario: los casos de uso son quienes
+ * reservan, liberan o venden las unidades al cambiar el estado de la compra.</p>
  */
-
 @Getter
 public class Compra {
 
     private final String id;
-    private final UUID buildId;      // solo el id: Build es OTRO agregado
-    private final String compradorId;   // solo el id: Comprador es OTRO agregado
-    private final Precio precioCongelado;  // el precio "de una foto", no cambia después
+    private final UUID buildId;          // puede ser null en una compra directa (p. ej. preventa)
+    private final String compradorId;
+    private final List<ItemCompra> items;
+    private final Precio precioCongelado;
     private final LocalDateTime fechaCompra;
     private EstadoCompra estado;
 
-    // Constructor privado: nadie crea una Compra sin pasar por realizar(...)
-    private Compra(String id, UUID buildId, String compradorId, Precio precioCongelado) {
+    private Compra(String id, UUID buildId, String compradorId, List<ItemCompra> items) {
         this.id = id;
         this.buildId = buildId;
         this.compradorId = compradorId;
-        this.precioCongelado = precioCongelado;
+        this.items = List.copyOf(items);
+        this.precioCongelado = calcularTotal(this.items);
         this.fechaCompra = LocalDateTime.now();
-        this.estado = EstadoCompra.PENDIENTE; // toda compra nace Pendiente, siempre
+        this.estado = EstadoCompra.PENDIENTE;
     }
 
-    // Único punto de entrada para crear una Compra: valida ANTES de existir
-    public static Compra realizar(String id, UUID buildId, String compradorId, Precio precioActualDelModelo) {
-        if (buildId == null || compradorId == null) {
-            throw new ReglaDominioException("La compra debe indicar modelo y comprador");
-        }
-        if (precioActualDelModelo == null) {
-            throw new ReglaDominioException("La compra debe tener un precio válido");
-        }
-        return new Compra(id, buildId, compradorId, precioActualDelModelo);
+    public static Compra realizar(String id, UUID buildId, String compradorId, List<ItemCompra> items) {
+        exigir(id != null && !id.isBlank(), "El identificador de la compra es obligatorio");
+        exigir(compradorId != null && !compradorId.isBlank(), "La compra debe indicar el comprador");
+        exigir(items != null && !items.isEmpty(), "La compra debe tener al menos un ítem");
+        exigir(items.stream().allMatch(Objects::nonNull), "La compra no puede tener ítems nulos");
+
+        long unidadesDistintas = items.stream()
+                .map(ItemCompra::unidadId)
+                .distinct()
+                .count();
+        exigir(unidadesDistintas == items.size(),
+                "Una compra no puede incluir dos veces la misma unidad");
+
+        return new Compra(id, buildId, compradorId, items);
     }
 
-    // ---------- Comportamiento del negocio ----------
-    // Cada método valida PRIMERO, cambia el estado DESPUÉS — nunca al revés.
+    private static Precio calcularTotal(List<ItemCompra> items) {
+        return items.stream()
+                .map(ItemCompra::precioUnitario)
+                .reduce(Precio::sumar)
+                .orElseThrow(() -> new ReglaDominioException("La compra debe tener al menos un ítem"));
+    }
+
+    // ---------- Ciclo de vida ----------
 
     public void confirmar() {
-        verificarQueNoEsteReembolsada();
+        verificarQueNoEsteFinal();
         verificarTransicion(EstadoCompra.COMPLETADA);
         this.estado = EstadoCompra.COMPLETADA;
     }
 
+    /**
+     * Cancela una compra pendiente. El caso de uso que la invoque debe liberar
+     * las unidades reservadas; el agregado solo conoce su propio estado.
+     */
+    public void cancelar() {
+        verificarQueNoEsteFinal();
+        verificarTransicion(EstadoCompra.CANCELADA);
+        this.estado = EstadoCompra.CANCELADA;
+    }
+
     public void solicitarReembolso(String motivo) {
-        verificarQueNoEsteReembolsada();
+        verificarQueNoEsteFinal();
         if (this.estado != EstadoCompra.COMPLETADA) {
             throw new ReglaDominioException("Solo se puede reembolsar una compra completada");
         }
@@ -74,11 +107,10 @@ public class Compra {
     }
 
     // ---------- Verificaciones internas ----------
-    // Privadas a propósito: nadie desde afuera puede saltárselas.
 
-    private void verificarQueNoEsteReembolsada() {
+    private void verificarQueNoEsteFinal() {
         if (this.estado.esFinal()) {
-            throw new ReglaDominioException("Una compra reembolsada no puede modificarse");
+            throw new ReglaDominioException("Una compra cancelada o reembolsada no puede modificarse");
         }
     }
 
@@ -89,7 +121,10 @@ public class Compra {
     }
 
     // ---------- Consultas ----------
-    // Sin setters: solo lectura hacia afuera.
+
+    public List<UUID> getUnidadesReservadas() {
+        return items.stream().map(ItemCompra::unidadId).toList();
+    }
 
     public EstadoCompra getEstado() {
         return estado;
@@ -99,17 +134,26 @@ public class Compra {
         return precioCongelado;
     }
 
-    public String getId() { return id; }
+    public String getId() {
+        return id;
+    }
 
-    public UUID getBuildId() {return buildId;}
+    public UUID getBuildId() {
+        return buildId;
+    }
 
-    public String getCompradorId() {return compradorId;}
+    public String getCompradorId() {
+        return compradorId;
+    }
 
-    public LocalDateTime getFechaCompra() {return fechaCompra;}
+    public LocalDateTime getFechaCompra() {
+        return fechaCompra;
+    }
 
-    // equals/hashCode por id: dos Compra son "la misma" solo si comparten id,
-    // sin importar si el estado cambió con el tiempo (a diferencia de Precio,
-    // que es un Value Object y compara TODOS sus campos).
+    public List<ItemCompra> getItems() {
+        return items;
+    }
+
     @Override
     public boolean equals(Object o) {
         if (this == o) return true;

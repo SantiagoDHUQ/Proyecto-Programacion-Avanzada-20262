@@ -31,30 +31,28 @@ public class EspecificacionTecnicaTest {
                 () -> new EspecificacionTecnica(socket, wattaje, tipoMemoria)
         );
     }
-    @Test
-    void especificacionSinSocketLanzaReglaDominioException() {
-        //Arrange
-        String socket = null;
-        int wattaje = 100;
-        String tipoMemoria = "DDR5";
 
-        //Act & Assert
-        assertThrows(
-                ReglaDominioException.class,
-                () -> new EspecificacionTecnica(socket, wattaje, tipoMemoria)
-        );
+    @Test
+    void especificacionSinSocketEsValidaParaCategoriasQueNoLoTienen() {
+        EspecificacionTecnica especificacion = new EspecificacionTecnica(null, 100, "DDR5");
+
+        assertNull(especificacion.socket());
+        assertEquals("DDR5", especificacion.tipoMemoria());
     }
-    @Test
-    void especificacionSinTipoMemoriaLanzaReglaDominioException() {
-        //Arrange
-        String socket = "AM5";
-        int wattaje = 120;
-        String tipoMemoria = null;
 
-        //Act & Assert
-        assertThrows(
-                ReglaDominioException.class,
-                () -> new EspecificacionTecnica(socket, wattaje, tipoMemoria)
-        );
+    @Test
+    void especificacionSinTipoMemoriaEsValidaParaCategoriasQueNoLoTienen() {
+        EspecificacionTecnica especificacion = new EspecificacionTecnica("AM5", 120, null);
+
+        assertEquals("AM5", especificacion.socket());
+        assertNull(especificacion.tipoMemoria());
+    }
+
+    @Test
+    void socketYMemoriaSeNormalizan() {
+        EspecificacionTecnica especificacion = new EspecificacionTecnica(" am5 ", 120, " ddr5 ");
+
+        assertEquals("AM5", especificacion.socket());
+        assertEquals("DDR5", especificacion.tipoMemoria());
     }
 }

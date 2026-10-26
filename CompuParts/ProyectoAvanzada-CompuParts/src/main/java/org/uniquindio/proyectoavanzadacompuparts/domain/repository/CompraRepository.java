@@ -4,6 +4,6 @@ import java.util.Optional;
 import org.uniquindio.proyectoavanzadacompuparts.domain.entity.Compra;
 
 public interface CompraRepository {
-    Optional<Compra> obtenerPorId(String id);
-    void guardar(Compra compra);
+    Optional<Compra> buscarPorId(String id);
+    Compra guardar(Compra compra);
 }

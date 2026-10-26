@@ -1,17 +1,18 @@
 package org.uniquindio.proyectoavanzadacompuparts.application.usecase;
 
-import org.uniquindio.proyectoavanzadacompuparts.application.dto.response.BuildResponseDTO;
+import org.uniquindio.proyectoavanzadacompuparts.application.dto.response.BuildResponse;
+import org.uniquindio.proyectoavanzadacompuparts.application.exception.RecursoNoEncontradoException;
 import org.uniquindio.proyectoavanzadacompuparts.domain.entity.Build;
-import org.uniquindio.proyectoavanzadacompuparts.domain.exception.ReglaDominioException;
 import org.uniquindio.proyectoavanzadacompuparts.domain.repository.BuildRepository;
-import org.uniquindio.proyectoavanzadacompuparts.domain.valueobject.EstadoBuild;
+import org.uniquindio.proyectoavanzadacompuparts.domain.valueobject.ResultadoCompatibilidad;
 
 import java.util.Objects;
 import java.util.UUID;
 
 /**
- * Caso de uso que valida si un Build es compatible y retorna su estado.
- * Requiere BuildRepository para inspeccionar y persistir el armado.
+ * Caso de uso que valida si un Build es compatible, persiste el estado resultante
+ * y retorna el resultado con sus motivos.
+ * Requiere BuildRepository para cargar y guardar el armado.
  */
 public class ValidarCompatibilidadBuildUseCase {
 
@@ -21,14 +22,13 @@ public class ValidarCompatibilidadBuildUseCase {
         this.buildRepository = Objects.requireNonNull(buildRepository, "El repositorio de builds no puede ser nulo");
     }
 
-    public BuildResponseDTO ejecutar(UUID buildId) {
+    public BuildResponse ejecutar(UUID buildId) {
         Build build = buildRepository.buscarPorId(buildId)
-                .orElseThrow(() -> new ReglaDominioException("No existe un Build con ese identificador"));
-        try {
-            build.validarCompatibilidad();
-            return new BuildResponseDTO(build.getId(), EstadoBuild.EN_CONSTRUCCION, build.getComponentes(), true);
-        } catch (ReglaDominioException e) {
-            return new BuildResponseDTO(build.getId(), EstadoBuild.INCOMPATIBLE, build.getComponentes(), false);
-        }
+                .orElseThrow(() -> new RecursoNoEncontradoException("No existe un Build con ese identificador"));
+
+        ResultadoCompatibilidad resultado = build.evaluarCompatibilidad();
+        buildRepository.guardar(build);
+
+        return BuildResponse.from(build, resultado);
     }
 }

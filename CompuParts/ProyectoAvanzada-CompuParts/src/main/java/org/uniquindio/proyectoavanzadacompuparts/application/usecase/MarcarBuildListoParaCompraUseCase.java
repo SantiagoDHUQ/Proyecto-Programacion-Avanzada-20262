@@ -1,7 +1,7 @@
 package org.uniquindio.proyectoavanzadacompuparts.application.usecase;
 
+import org.uniquindio.proyectoavanzadacompuparts.application.exception.RecursoNoEncontradoException;
 import org.uniquindio.proyectoavanzadacompuparts.domain.entity.Build;
-import org.uniquindio.proyectoavanzadacompuparts.domain.exception.ReglaDominioException;
 import org.uniquindio.proyectoavanzadacompuparts.domain.repository.BuildRepository;
 
 import java.util.Objects;
@@ -21,7 +21,7 @@ public class MarcarBuildListoParaCompraUseCase {
 
     public Build ejecutar(UUID buildId) {
         Build build = buildRepository.buscarPorId(buildId)
-                .orElseThrow(() -> new ReglaDominioException("No existe un Build con ese identificador"));
+                .orElseThrow(() -> new RecursoNoEncontradoException("No existe un Build con ese identificador"));
         build.marcarComoListoParaCompra();
         return buildRepository.guardar(build);
     }

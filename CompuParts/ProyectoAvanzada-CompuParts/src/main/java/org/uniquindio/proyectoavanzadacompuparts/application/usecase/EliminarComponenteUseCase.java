@@ -1,5 +1,6 @@
 package org.uniquindio.proyectoavanzadacompuparts.application.usecase;
 
+import org.uniquindio.proyectoavanzadacompuparts.application.exception.RecursoNoEncontradoException;
 import org.uniquindio.proyectoavanzadacompuparts.domain.entity.Build;
 import org.uniquindio.proyectoavanzadacompuparts.domain.entity.Componente;
 import org.uniquindio.proyectoavanzadacompuparts.domain.exception.ReglaDominioException;
@@ -7,12 +8,14 @@ import org.uniquindio.proyectoavanzadacompuparts.domain.repository.BuildReposito
 import org.uniquindio.proyectoavanzadacompuparts.domain.repository.ComponenteRepository;
 
 import java.util.Objects;
-import java.util.UUID;
 
 /**
- * Caso de uso que elimina un componente revisando que no haga parte de un Build activo
+ * Caso de uso que elimina lógicamente un Componente del catálogo.
+ *
+ * <p>No se permite eliminarlo si participa en un Build activo: en ese caso el
+ * vendedor solo puede marcarlo como agotado (regla 6). El borrado es lógico para
+ * conservar el historial de compras, RMA y unidades.</p>
  */
-
 public class EliminarComponenteUseCase {
 
     private final ComponenteRepository componenteRepository;
@@ -23,14 +26,21 @@ public class EliminarComponenteUseCase {
         this.buildRepository = Objects.requireNonNull(buildRepository);
     }
 
-    public void ejecutar(String componenteId, UUID buildId) {
-        Build build = buildRepository.buscarPorId(buildId)
-                .orElseThrow(()-> new ReglaDominioException("No existe un build con ese ID"));
+    public void ejecutar(String componenteId, String vendedorId) {
         Componente componente = componenteRepository.buscarPorId(componenteId)
-                .orElseThrow(()-> new ReglaDominioException("No existe un componente con ese ID"));
-        if (componente.esActivoEnBuild(build)) {
-            throw new ReglaDominioException("El componente pertenece a un Build activo");
+                .orElseThrow(() -> new RecursoNoEncontradoException("No existe un Componente con ese identificador"));
+
+        componente.validarPropietario(vendedorId);
+
+        boolean estaEnBuildActivo = buildRepository.listarTodos().stream()
+                .filter(Build::estaActivo)
+                .anyMatch(build -> build.contieneComponente(componenteId));
+
+        if (estaEnBuildActivo) {
+            throw new ReglaDominioException("El componente pertenece a un Build activo; solo puede marcarse como agotado");
         }
-        build.eliminarComponente(componenteId);
+
+        componente.eliminar();
+        componenteRepository.guardar(componente);
     }
 }

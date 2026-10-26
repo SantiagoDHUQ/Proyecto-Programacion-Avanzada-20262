@@ -29,6 +29,15 @@ public class ComponenteRepositoryEnMemoria implements ComponenteRepository {
     }
 
     @Override
+    public boolean existeNumeroSerie(String numeroSerie) {
+        if (numeroSerie == null || numeroSerie.isBlank()) {
+            return false;
+        }
+        return almacenamiento.values().stream()
+                .anyMatch(componente -> componente.existeNumeroSerie(numeroSerie));
+    }
+
+    @Override
     public void eliminar(String id) {
         almacenamiento.remove(id);
     }

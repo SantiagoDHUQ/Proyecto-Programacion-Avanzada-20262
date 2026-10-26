@@ -1,29 +1,30 @@
 package org.uniquindio.proyectoavanzadacompuparts.application.usecase;
 
+import org.uniquindio.proyectoavanzadacompuparts.application.exception.RecursoNoEncontradoException;
 import org.uniquindio.proyectoavanzadacompuparts.domain.entity.Componente;
-import org.uniquindio.proyectoavanzadacompuparts.domain.exception.ReglaDominioException;
-import org.uniquindio.proyectoavanzadacompuparts.domain.repository.BuildRepository;
 import org.uniquindio.proyectoavanzadacompuparts.domain.repository.ComponenteRepository;
 
 import java.util.Objects;
-import java.util.UUID;
 
 /**
- * Caso de uso que marca un Componente como agotado si no participa en un Build activo.
- * Requiere ComponenteRepository y BuildRepository para verificar la regla de dominio.
+ * Caso de uso que marca un Componente como agotado.
+ *
+ * <p>Es la operación permitida incluso cuando el componente está dentro de un
+ * Build activo: se oculta de la venta sin borrar su historial ni sus unidades.</p>
  */
 public class MarcarComponenteAgotadoUseCase {
 
     private final ComponenteRepository componenteRepository;
 
-    public MarcarComponenteAgotadoUseCase(ComponenteRepository componenteRepository, BuildRepository buildRepository) {
-        this.componenteRepository = Objects.requireNonNull(componenteRepository, "El repositorio de componentes no puede ser nulo");
+    public MarcarComponenteAgotadoUseCase(ComponenteRepository componenteRepository) {
+        this.componenteRepository = Objects.requireNonNull(componenteRepository);
     }
 
-    public Componente ejecutar(String componenteId) {
+    public Componente ejecutar(String componenteId, String vendedorId) {
         Componente componente = componenteRepository.buscarPorId(componenteId)
-                .orElseThrow(() -> new ReglaDominioException("No existe un Componente con ese identificador"));
+                .orElseThrow(() -> new RecursoNoEncontradoException("No existe un Componente con ese identificador"));
 
+        componente.validarPropietario(vendedorId);
         componente.marcarAgotado();
         return componenteRepository.guardar(componente);
     }
