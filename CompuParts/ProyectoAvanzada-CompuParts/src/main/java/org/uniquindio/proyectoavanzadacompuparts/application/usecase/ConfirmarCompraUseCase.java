@@ -12,9 +12,10 @@ import org.uniquindio.proyectoavanzadacompuparts.domain.repository.BuildReposito
 import org.uniquindio.proyectoavanzadacompuparts.domain.repository.CompraRepository;
 import org.uniquindio.proyectoavanzadacompuparts.domain.repository.ComponenteRepository;
 import org.uniquindio.proyectoavanzadacompuparts.domain.repository.ReservaPreventaRepository;
-import org.uniquindio.proyectoavanzadacompuparts.domain.valueobject.ItemCompra;
+import org.uniquindio.proyectoavanzadacompuparts.domain.service.CompraService;
 
-import java.util.LinkedHashMap;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Map;
 
 /**
@@ -32,59 +33,25 @@ public class ConfirmarCompraUseCase {
     private final ComponenteRepository componenteRepository;
     private final BuildRepository buildRepository;
     private final ReservaPreventaRepository reservaPreventaRepository;
+    private final CompraService compraService;
 
     @Transactional
     public Compra ejecutar(String compraId) {
         Compra compra = compraRepository.buscarPorId(compraId)
                 .orElseThrow(() -> new RecursoNoEncontradoException("No existe una Compra con ese identificador"));
 
-        // El dominio valida la transición
-        compra.validarConfirmar();
+        Build build = buildRepository.obtenerPorIdDeCompra(compra);
+        Map<String, Componente> componentes = componenteRepository.buscarPorItems(compra.getItems());
+        List<ReservaPreventa> reservasVigentes = reservaPreventaRepository.buscarVigentesEnCompra(compra.getItems());
 
-        Build build = null;
-        if (compra.getBuildId() != null) {
-            build = buildRepository.buscarPorId(compra.getBuildId())
-                    .orElseThrow(() -> new RecursoNoEncontradoException("No existe el Build de la compra"));
-            // El dominio valida el estado del build
-            build.validarListoParaComprar();
-        }
+        compraService.confirmar(compra, build, new ArrayList<>(componentes.values()), reservasVigentes);
 
-        Map<String, Componente> componentes = new LinkedHashMap<>();
-
-        // Primero valida todo; solo después cambia estados.
-        for (ItemCompra item : compra.getItems()) {
-            Componente componente = buscarComponente(item.componenteId());
-            componentes.put(componente.getId(), componente);
-            // El dominio valida el estado de la unidad
-            componente.unidadPorId(item.unidadId()).validarEstaReservada();
-        }
-
-        for (ItemCompra item : compra.getItems()) {
-            componentes.get(item.componenteId()).venderUnidad(item.unidadId());
-        }
         componentes.values().forEach(componenteRepository::guardar);
-
-        compra.confirmar();
-
-        for (ItemCompra item : compra.getItems()) {
-            reservaPreventaRepository.buscarVigentePorUnidad(item.unidadId())
-                    .filter(ReservaPreventa::estaEnCompra)
-                    .ifPresent(reserva -> {
-                        reserva.convertir();
-                        reservaPreventaRepository.guardar(reserva);
-                    });
-        }
-
+        reservasVigentes.forEach(reservaPreventaRepository::guardar);
         if (build != null) {
-            build.marcarComoComprado();
             buildRepository.guardar(build);
         }
 
         return compraRepository.guardar(compra);
-    }
-
-    private Componente buscarComponente(String componenteId) {
-        return componenteRepository.buscarPorId(componenteId)
-                .orElseThrow(() -> new RecursoNoEncontradoException("No existe un Componente con ese identificador"));
     }
 }

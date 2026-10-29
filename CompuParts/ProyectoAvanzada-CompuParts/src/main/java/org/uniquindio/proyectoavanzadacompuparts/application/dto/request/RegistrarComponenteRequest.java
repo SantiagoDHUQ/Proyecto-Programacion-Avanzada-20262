@@ -7,6 +7,8 @@ import jakarta.validation.constraints.NotNull;
 
 import java.math.BigDecimal;
 
+import org.uniquindio.proyectoavanzadacompuparts.domain.factory.DatosComponente;
+
 /**
  * DTO de entrada para RegistrarComponenteUseCase.
  *
@@ -37,4 +39,10 @@ public record RegistrarComponenteRequest(
 
         @NotBlank(message = "El vendedor es necesario") String vendedorId
 ) {
+
+    /** Traduce el request al contrato de entrada del dominio; no aplica ninguna regla. */
+    public DatosComponente aDatos() {
+        return new DatosComponente(id, nombre, categoria, socket, wattajeRequerido, tipoMemoria,
+                precio, moneda, duracionGarantia);
+    }
 }

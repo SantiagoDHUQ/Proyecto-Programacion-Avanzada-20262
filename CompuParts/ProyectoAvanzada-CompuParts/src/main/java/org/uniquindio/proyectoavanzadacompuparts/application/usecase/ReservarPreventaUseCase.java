@@ -6,10 +6,9 @@ import org.springframework.transaction.annotation.Transactional;
 import org.uniquindio.proyectoavanzadacompuparts.application.exception.RecursoNoEncontradoException;
 import org.uniquindio.proyectoavanzadacompuparts.domain.entity.Componente;
 import org.uniquindio.proyectoavanzadacompuparts.domain.entity.ReservaPreventa;
-import org.uniquindio.proyectoavanzadacompuparts.domain.entity.UnidadInventario;
-import org.uniquindio.proyectoavanzadacompuparts.domain.exception.ReglaDominioException;
 import org.uniquindio.proyectoavanzadacompuparts.domain.repository.ComponenteRepository;
 import org.uniquindio.proyectoavanzadacompuparts.domain.repository.ReservaPreventaRepository;
+import org.uniquindio.proyectoavanzadacompuparts.domain.service.PreventaService;
 
 import java.util.UUID;
 
@@ -25,22 +24,19 @@ public class ReservarPreventaUseCase {
 
     private final ComponenteRepository componenteRepository;
     private final ReservaPreventaRepository reservaPreventaRepository;
+    private final PreventaService preventaService;
 
     @Transactional
     public ReservaPreventa ejecutar(String componenteId, UUID unidadId, String compradorId) {
         Componente componente = componenteRepository.buscarPorId(componenteId)
                 .orElseThrow(() -> new RecursoNoEncontradoException("No existe un Componente con ese identificador"));
 
-        UnidadInventario unidad = componente.unidadPorId(unidadId);
-        // El dominio valida el estado de la unidad
-        unidad.validarEstaEnPreventa();
+        // Hechos técnicos
+        boolean hayReservaActiva = reservaPreventaRepository.buscarActivaPorUnidad(unidadId).isPresent();
 
-        if (reservaPreventaRepository.buscarActivaPorUnidad(unidadId).isPresent()) {
-            throw new ReglaDominioException("La unidad ya tiene una reserva de preventa activa");
-        }
+        // Una llamada de dominio
+        ReservaPreventa reserva = preventaService.reservar(componente, unidadId, compradorId, hayReservaActiva);
 
-        ReservaPreventa reserva = ReservaPreventa.crear(componenteId, unidadId, compradorId);
-        componente.reservarPreventa(unidadId, reserva.getId());
         componenteRepository.guardar(componente);
         return reservaPreventaRepository.guardar(reserva);
     }

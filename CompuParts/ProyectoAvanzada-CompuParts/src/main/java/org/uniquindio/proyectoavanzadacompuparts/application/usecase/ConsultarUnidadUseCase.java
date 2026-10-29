@@ -21,14 +21,11 @@ public class ConsultarUnidadUseCase {
 
     private final ComponenteRepository componenteRepository;
 
-    @Transactional
+    @Transactional(readOnly = true)
     public UnidadInventario ejecutar(String componenteId, UUID unidadId) {
         Componente componente = componenteRepository.buscarPorId(componenteId)
                 .orElseThrow(() -> new RecursoNoEncontradoException("No existe un Componente con ese identificador"));
-        try {
-            return componente.unidadPorId(unidadId);
-        } catch (ReglaDominioException e) {
-            throw new RecursoNoEncontradoException("No existe esa unidad en el componente");
-        }
+        return componente.buscarUnidad(unidadId)
+                .orElseThrow(() -> new RecursoNoEncontradoException("No existe esa unidad en el componente"));
     }
 }

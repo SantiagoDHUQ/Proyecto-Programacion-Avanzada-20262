@@ -2,6 +2,7 @@ package org.uniquindio.proyectoavanzadacompuparts.infrastructure.persistence;
 
 import org.uniquindio.proyectoavanzadacompuparts.domain.entity.Componente;
 import org.uniquindio.proyectoavanzadacompuparts.domain.repository.ComponenteRepository;
+import org.uniquindio.proyectoavanzadacompuparts.domain.valueobject.ItemCompra;
 
 import java.util.*;
 
@@ -40,5 +41,25 @@ public class ComponenteRepositoryEnMemoria implements ComponenteRepository {
     @Override
     public void eliminar(String id) {
         almacenamiento.remove(id);
+    }
+
+    @Override
+    public Map<String, Componente> buscarPorItems(Collection<ItemCompra> items) {
+        Map<String, Componente> componentes = new LinkedHashMap<>();
+        if (items == null) {
+            return componentes;
+        }
+        for (ItemCompra item : items) {
+            if (item == null || item.componenteId() == null) {
+                continue;
+            }
+            if (componentes.containsKey(item.componenteId())) {
+                continue;
+            }
+            Componente componente = buscarPorId(item.componenteId())
+                    .orElseThrow(() -> new org.uniquindio.proyectoavanzadacompuparts.application.exception.RecursoNoEncontradoException("No existe un Componente con ese identificador"));
+            componentes.put(componente.getId(), componente);
+        }
+        return componentes;
     }
 }

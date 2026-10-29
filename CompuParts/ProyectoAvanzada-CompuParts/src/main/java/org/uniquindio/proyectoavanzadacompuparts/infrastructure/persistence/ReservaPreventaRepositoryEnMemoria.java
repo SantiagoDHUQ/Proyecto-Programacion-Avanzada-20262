@@ -3,8 +3,10 @@ package org.uniquindio.proyectoavanzadacompuparts.infrastructure.persistence;
 import org.uniquindio.proyectoavanzadacompuparts.domain.entity.ReservaPreventa;
 import org.uniquindio.proyectoavanzadacompuparts.domain.repository.ReservaPreventaRepository;
 import org.uniquindio.proyectoavanzadacompuparts.domain.valueobject.EstadoReservaPreventa;
+import org.uniquindio.proyectoavanzadacompuparts.domain.valueobject.ItemCompra;
 
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -48,5 +50,28 @@ public class ReservaPreventaRepositoryEnMemoria implements ReservaPreventaReposi
                 .filter(reserva -> reserva.getUnidadId().equals(unidadId))
                 .filter(reserva -> reserva.getEstado().estaVigente())
                 .findFirst();
+    }
+
+    @Override
+    public boolean esDueno(UUID reservaId, String compradorId) {
+        ReservaPreventa reserva = almacenamiento.get(reservaId);
+        return reserva != null && reserva.getCompradorId().equals(compradorId);
+    }
+
+    @Override
+    public List<ReservaPreventa> buscarVigentesEnCompra(Collection<ItemCompra> items) {
+        List<ReservaPreventa> reservasVigentes = new ArrayList<>();
+        if (items == null) {
+            return reservasVigentes;
+        }
+        for (ItemCompra item : items) {
+            if (item == null || item.unidadId() == null) {
+                continue;
+            }
+            buscarVigentePorUnidad(item.unidadId())
+                    .filter(ReservaPreventa::estaEnCompra)
+                    .ifPresent(reservasVigentes::add);
+        }
+        return reservasVigentes;
     }
 }

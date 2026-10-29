@@ -4,6 +4,8 @@ import lombok.Getter;
 import org.uniquindio.proyectoavanzadacompuparts.domain.exception.ReglaDominioException;
 import org.uniquindio.proyectoavanzadacompuparts.domain.valueobject.CategoriaComponente;
 import org.uniquindio.proyectoavanzadacompuparts.domain.valueobject.EstadoBuild;
+import org.uniquindio.proyectoavanzadacompuparts.domain.valueobject.ItemCompra;
+import org.uniquindio.proyectoavanzadacompuparts.domain.entity.UnidadInventario;
 import org.uniquindio.proyectoavanzadacompuparts.domain.valueobject.ResultadoCompatibilidad;
 
 import java.util.*;
@@ -217,6 +219,29 @@ public class Build {
     public void validarListoParaComprar() {
         exigir(estaActivo(), "El Build debe estar activo para poder comprarse");
         exigir(estado == EstadoBuild.LISTO_PARA_COMPRA, "El Build debe estar listo para compra");
+    }
+
+    /**
+     * Reserva una unidad disponible de cada componente del Build para una compra.
+     * <p>
+     * Debe llamarse solo cuando el Build está en estado LISTO_PARA_COMPRA.
+     * Cada componente reserva su primera unidad disponible y se crea el ItemCompra correspondiente.
+     *
+     * @return lista de items con las unidades reservadas, listos para crear la Compra
+     */
+    public List<ItemCompra> reservarUnidadesParaCompra() {
+        validarListoParaComprar();
+        List<ItemCompra> items = new ArrayList<>();
+        for (Componente componente : componentes) {
+            UnidadInventario unidad = componente.reservarPrimeraUnidadDisponible();
+            items.add(new ItemCompra(
+                    unidad.getId(),
+                    componente.getId(),
+                    unidad.getNumeroSerie(),
+                    componente.getPrecio()
+            ));
+        }
+        return items;
     }
 
     public Componente componentePorId(String id) {

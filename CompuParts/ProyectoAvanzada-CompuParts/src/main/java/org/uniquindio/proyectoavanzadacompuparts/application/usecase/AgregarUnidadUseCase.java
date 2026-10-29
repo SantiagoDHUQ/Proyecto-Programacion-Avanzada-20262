@@ -8,8 +8,6 @@ import org.uniquindio.proyectoavanzadacompuparts.domain.entity.Componente;
 import org.uniquindio.proyectoavanzadacompuparts.domain.exception.ReglaDominioException;
 import org.uniquindio.proyectoavanzadacompuparts.domain.repository.ComponenteRepository;
 
-import java.util.Objects;
-
 /**
  * Caso de uso del vendedor: agrega una unidad física (con serial) a un SKU.
  *
@@ -27,14 +25,9 @@ public class AgregarUnidadUseCase {
         Componente componente = componenteRepository.buscarPorId(componenteId)
                 .orElseThrow(() -> new RecursoNoEncontradoException("No existe un Componente con ese identificador"));
 
-        componente.validarPropietario(vendedorId);
+        boolean serieYaRegistrada = componenteRepository.existeNumeroSerie(numeroSerie);
 
-        if (numeroSerie != null && !numeroSerie.isBlank()
-                && componenteRepository.existeNumeroSerie(numeroSerie)) {
-            throw new ReglaDominioException("Ya existe una unidad con ese número de serie");
-        }
-
-        componente.agregarUnidad(numeroSerie);
+        componente.agregarUnidad(vendedorId, numeroSerie, serieYaRegistrada);
         return componenteRepository.guardar(componente);
     }
 }

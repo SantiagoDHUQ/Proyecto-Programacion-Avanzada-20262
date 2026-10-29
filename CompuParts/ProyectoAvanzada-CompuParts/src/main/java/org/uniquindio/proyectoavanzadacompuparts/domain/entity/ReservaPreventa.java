@@ -92,6 +92,14 @@ public class ReservaPreventa {
     }
 
     /**
+     * Valida que el comprador indicado sea el dueño de la reserva.
+     * Lanza ReglaDominioException si no lo es.
+     */
+    public void validarDueno(String compradorId) {
+        exigir(this.compradorId.equals(compradorId), "Solo el comprador que reservó puede operar esta reserva de preventa");
+    }
+
+    /**
      * Valida que la reserva pueda iniciar una compra.
      */
     public void validarIniciarCompra() {

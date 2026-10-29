@@ -7,8 +7,8 @@ import org.uniquindio.proyectoavanzadacompuparts.application.exception.RecursoNo
 import org.uniquindio.proyectoavanzadacompuparts.domain.entity.Componente;
 import org.uniquindio.proyectoavanzadacompuparts.domain.repository.ComponenteRepository;
 
+import java.time.Clock;
 import java.time.LocalDate;
-import java.util.Objects;
 
 /**
  * Caso de uso del vendedor: publica una unidad de un componente en modalidad Preventa.
@@ -21,14 +21,15 @@ import java.util.Objects;
 public class PublicarPreventaUseCase {
 
     private final ComponenteRepository componenteRepository;
+    private final Clock clock;
 
     @Transactional
     public Componente ejecutar(String componenteId, String vendedorId, LocalDate fechaEstimadaLlegada) {
         Componente componente = componenteRepository.buscarPorId(componenteId)
                 .orElseThrow(() -> new RecursoNoEncontradoException("No existe un Componente con ese identificador"));
 
-        componente.validarPropietario(vendedorId);
-        componente.agregarPreventa(fechaEstimadaLlegada);
+        LocalDate hoy = LocalDate.now(clock);
+        componente.agregarPreventa(vendedorId, fechaEstimadaLlegada, hoy);
         return componenteRepository.guardar(componente);
     }
 }

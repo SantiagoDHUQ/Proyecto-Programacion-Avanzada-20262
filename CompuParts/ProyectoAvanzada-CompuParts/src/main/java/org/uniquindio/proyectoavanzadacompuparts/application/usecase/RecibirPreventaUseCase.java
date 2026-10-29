@@ -29,14 +29,10 @@ public class RecibirPreventaUseCase {
         Componente componente = componenteRepository.buscarPorId(componenteId)
                 .orElseThrow(() -> new RecursoNoEncontradoException("No existe un Componente con ese identificador"));
 
-        componente.validarPropietario(vendedorId);
+        boolean serieYaRegistrada = numeroSerie != null && !numeroSerie.isBlank()
+                && componenteRepository.existeNumeroSerie(numeroSerie);
 
-        if (numeroSerie != null && !numeroSerie.isBlank()
-                && componenteRepository.existeNumeroSerie(numeroSerie)) {
-            throw new ReglaDominioException("Ya existe una unidad con ese número de serie");
-        }
-
-        componente.recibirPreventa(unidadId, numeroSerie);
+        componente.recibirPreventa(unidadId, vendedorId, numeroSerie, serieYaRegistrada);
         return componenteRepository.guardar(componente);
     }
 }

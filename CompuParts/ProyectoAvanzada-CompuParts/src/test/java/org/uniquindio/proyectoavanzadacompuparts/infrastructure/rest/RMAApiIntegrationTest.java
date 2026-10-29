@@ -75,7 +75,7 @@ public class RMAApiIntegrationTest {
                 precio,
                 vendedor,
                 365);
-        UnidadInventario unidad = componente.agregarUnidad(serial);
+        UnidadInventario unidad = componente.agregarUnidad(vendedorId, serial, false);
         componente.reservarUnidad(unidad.getId());
         componente.venderUnidad(unidad.getId());
         componenteRepository.guardar(componente);

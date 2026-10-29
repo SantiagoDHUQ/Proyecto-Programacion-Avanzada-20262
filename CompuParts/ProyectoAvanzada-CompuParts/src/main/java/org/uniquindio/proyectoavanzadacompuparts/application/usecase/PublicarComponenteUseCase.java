@@ -25,8 +25,7 @@ public class PublicarComponenteUseCase {
     public Componente ejecutar(String componenteId, String vendedorId) {
         Componente componente = componenteRepository.buscarPorId(componenteId)
                 .orElseThrow(() -> new RecursoNoEncontradoException("No existe un Componente con ese identificador"));
-        componente.validarPropietario(vendedorId);
-        componente.publicar();
+        componente.publicar(vendedorId);
         return componenteRepository.guardar(componente);
     }
 }

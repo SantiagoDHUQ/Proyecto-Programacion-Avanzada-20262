@@ -24,4 +24,12 @@ public interface ReservaPreventaRepository {
      * una compra directa con la promesa de compra que la originó.
      */
     Optional<ReservaPreventa> buscarVigentePorUnidad(UUID unidadId);
+
+    /**
+     * Valida si la reserva pertenece al comprador indicado.
+     * Cruce entre agregados: ReservaPreventa y Comprador.
+     */
+    boolean esDueno(UUID reservaId, String compradorId);
+
+    java.util.List<ReservaPreventa> buscarVigentesEnCompra(java.util.Collection<org.uniquindio.proyectoavanzadacompuparts.domain.valueobject.ItemCompra> items);
 }

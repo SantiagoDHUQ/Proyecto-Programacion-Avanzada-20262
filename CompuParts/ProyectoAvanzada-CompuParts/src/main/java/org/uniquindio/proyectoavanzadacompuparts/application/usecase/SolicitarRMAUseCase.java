@@ -8,17 +8,11 @@ import org.uniquindio.proyectoavanzadacompuparts.application.exception.RecursoNo
 import org.uniquindio.proyectoavanzadacompuparts.domain.entity.Compra;
 import org.uniquindio.proyectoavanzadacompuparts.domain.entity.Componente;
 import org.uniquindio.proyectoavanzadacompuparts.domain.entity.SolicitudRMA;
-import org.uniquindio.proyectoavanzadacompuparts.domain.entity.UnidadInventario;
-import org.uniquindio.proyectoavanzadacompuparts.domain.exception.ReglaDominioException;
 import org.uniquindio.proyectoavanzadacompuparts.domain.repository.ComponenteRepository;
 import org.uniquindio.proyectoavanzadacompuparts.domain.repository.CompraRepository;
 import org.uniquindio.proyectoavanzadacompuparts.domain.repository.SolicitudRMARepository;
+import org.uniquindio.proyectoavanzadacompuparts.domain.service.RmaService;
 import org.uniquindio.proyectoavanzadacompuparts.domain.valueobject.ItemCompra;
-
-import java.time.LocalDate;
-import java.util.Objects;
-
-import static org.uniquindio.proyectoavanzadacompuparts.domain.exception.ReglaDominioException.exigir;
 
 /**
  * Caso de uso, del lado del comprador, que solicita una RMA para una unidad
@@ -35,75 +29,29 @@ public class SolicitarRMAUseCase {
     private final CompraRepository compraRepository;
     private final ComponenteRepository componenteRepository;
     private final SolicitudRMARepository solicitudRMARepository;
+    private final RmaService rmaService;
 
     @Transactional
     public SolicitudRMA ejecutar(SolicitarRMARequest request) {
-        exigir(request != null, "La solicitud RMA es obligatoria");
-        exigir(request.id() != null && !request.id().isBlank(),
-                "El identificador de la SolicitudRMA es obligatorio");
-        exigir(request.compraId() != null && !request.compraId().isBlank(),
-                "La SolicitudRMA debe indicar la compra");
-        exigir(request.numeroSerie() != null && !request.numeroSerie().isBlank(),
-                "La SolicitudRMA debe indicar el número de serie de la unidad");
-        exigir(request.compradorId() != null && !request.compradorId().isBlank(),
-                "La SolicitudRMA debe indicar el comprador");
-
-        if (solicitudRMARepository.buscarPorId(request.id()).isPresent()) {
-            throw new ReglaDominioException("Ya existe una SolicitudRMA con ese identificador");
-        }
+        boolean idYaExiste = solicitudRMARepository.buscarPorId(request.id()).isPresent();
 
         Compra compra = compraRepository.buscarPorId(request.compraId())
                 .orElseThrow(() -> new RecursoNoEncontradoException(
                         "No existe una Compra con ese identificador"));
 
-        // El dominio valida las reglas de negocio
-        compra.validarParaSolicitarRMA(request.compradorId());
-        compra.validarNumeroSeriePertenece(request.numeroSerie());
+        String numeroSerie = request.numeroSerie();
+        String componenteId = compraRepository.obtenerComponenteIdPorNumeroSerie(compra, numeroSerie);
+        Componente componente = componenteId == null ? null : componenteRepository.buscarPorId(componenteId).orElse(null);
+        boolean hayPendiente = numeroSerie == null ? false : solicitudRMARepository.existePendientePorNumeroSerie(numeroSerie);
 
-        String numeroSerie = request.numeroSerie().trim();
-        ItemCompra item = compra.getItems().stream()
-                .filter(i -> i.numeroSerie().equalsIgnoreCase(numeroSerie))
-                .findFirst()
-                .orElseThrow(() -> new ReglaDominioException(
-                        "El número de serie no pertenece a la compra"));
+        SolicitudRMA solicitud = rmaService.solicitar(
+                compra, componente, numeroSerie,
+                request.compradorId(), request.fechaSolicitud(), hayPendiente, request.id(), idYaExiste
+        );
 
-        Componente componente = componenteRepository.buscarPorId(item.componenteId())
-                .orElseThrow(() -> new RecursoNoEncontradoException(
-                        "No existe un Componente con ese identificador"));
-
-        if (solicitudRMARepository.existePendientePorNumeroSerie(numeroSerie)) {
-            throw new ReglaDominioException("Ya existe una SolicitudRMA pendiente para esa unidad");
+        if (componente != null) {
+            componenteRepository.guardar(componente);
         }
-
-        // El dominio valida el estado de la unidad
-        UnidadInventario unidad = componente.unidadPorId(item.unidadId());
-        unidad.validarEstaVendida();
-
-        LocalDate fechaCompra = compra.getFechaCompra().toLocalDate();
-        LocalDate fechaSolicitud = request.fechaSolicitud() == null
-                ? LocalDate.now()
-                : request.fechaSolicitud();
-
-        if (!componente.admiteRMA(fechaCompra, fechaSolicitud)) {
-            throw new ReglaDominioException("El componente no tiene garantía vigente para RMA");
-        }
-
-        int duracionGarantia = componente.getGarantia()
-                .orElseThrow(() -> new ReglaDominioException("El componente no tiene garantía"))
-                .dias();
-
-        SolicitudRMA solicitud = SolicitudRMA.crear(
-                request.id(),
-                componente.getId(),
-                compra.getId(),
-                item.numeroSerie(),
-                compra.getCompradorId(),
-                fechaCompra,
-                duracionGarantia,
-                fechaSolicitud);
-
-        componente.entrarEnRMA(unidad.getId());
-        componenteRepository.guardar(componente);
         return solicitudRMARepository.guardar(solicitud);
     }
 }

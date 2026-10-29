@@ -7,6 +7,8 @@ import org.uniquindio.proyectoavanzadacompuparts.domain.entity.ReservaPreventa;
 import org.uniquindio.proyectoavanzadacompuparts.domain.entity.UnidadInventario;
 import org.uniquindio.proyectoavanzadacompuparts.domain.entity.Vendedor;
 import org.uniquindio.proyectoavanzadacompuparts.domain.exception.ReglaDominioException;
+import org.uniquindio.proyectoavanzadacompuparts.domain.repository.ReservaPreventaRepository;
+import org.uniquindio.proyectoavanzadacompuparts.domain.service.PreventaService;
 import org.uniquindio.proyectoavanzadacompuparts.domain.valueobject.CategoriaComponente;
 import org.uniquindio.proyectoavanzadacompuparts.domain.valueobject.EspecificacionTecnica;
 import org.uniquindio.proyectoavanzadacompuparts.domain.valueobject.EstadoReservaPreventa;
@@ -24,6 +26,7 @@ public class ReservaPreventaUseCaseTest {
 
     private ComponenteRepositoryEnMemoria componenteRepository;
     private ReservaPreventaRepositoryEnMemoria reservaRepository;
+    private PreventaService preventaService;
     private ReservarPreventaUseCase reservarPreventa;
     private CancelarReservaPreventaUseCase cancelarReservaPreventa;
     private RecibirPreventaUseCase recibirPreventa;
@@ -34,12 +37,14 @@ public class ReservaPreventaUseCaseTest {
     void setUp() {
         componenteRepository = new ComponenteRepositoryEnMemoria();
         reservaRepository = new ReservaPreventaRepositoryEnMemoria();
-        reservarPreventa = new ReservarPreventaUseCase(componenteRepository, reservaRepository);
-        cancelarReservaPreventa = new CancelarReservaPreventaUseCase(componenteRepository, reservaRepository);
+        PreventaService preventaService = new PreventaService(reservaRepository, java.time.Clock.systemUTC());
+
+        reservarPreventa = new ReservarPreventaUseCase(componenteRepository, reservaRepository, preventaService);
+        cancelarReservaPreventa = new CancelarReservaPreventaUseCase(componenteRepository, reservaRepository, preventaService);
         recibirPreventa = new RecibirPreventaUseCase(componenteRepository);
 
         componente = crearComponente("comp-1");
-        unidadPreventa = componente.agregarPreventa(LocalDate.now().plusDays(10));
+        unidadPreventa = componente.agregarPreventa("v1", LocalDate.now().plusDays(10), LocalDate.now());
         componenteRepository.guardar(componente);
     }
 
@@ -126,7 +131,7 @@ public class ReservaPreventaUseCaseTest {
     @Test
     void elNumeroDeSerieEsUnicoEnTodoElCatalogo() {
         Componente otro = crearComponente("comp-2");
-        otro.agregarUnidad("SER-1");
+        otro.agregarUnidad("v1", "SER-1", false);
         componenteRepository.guardar(otro);
 
         assertThrows(ReglaDominioException.class,
@@ -136,7 +141,7 @@ public class ReservaPreventaUseCaseTest {
     @Test
     void noSePuedeReservarUnaUnidadQueNoEstaEnPreventa() {
         Componente disponible = crearComponente("comp-2");
-        UnidadInventario unidad = disponible.agregarUnidad("SER-D");
+        UnidadInventario unidad = disponible.agregarUnidad("v1", "SER-D", false);
         componenteRepository.guardar(disponible);
 
         assertThrows(ReglaDominioException.class,

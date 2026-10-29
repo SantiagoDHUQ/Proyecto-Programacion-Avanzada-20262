@@ -26,8 +26,7 @@ public class MarcarComponenteAgotadoUseCase {
         Componente componente = componenteRepository.buscarPorId(componenteId)
                 .orElseThrow(() -> new RecursoNoEncontradoException("No existe un Componente con ese identificador"));
 
-        componente.validarPropietario(vendedorId);
-        componente.marcarAgotado();
+        componente.marcarAgotado(vendedorId);
         return componenteRepository.guardar(componente);
     }
 }

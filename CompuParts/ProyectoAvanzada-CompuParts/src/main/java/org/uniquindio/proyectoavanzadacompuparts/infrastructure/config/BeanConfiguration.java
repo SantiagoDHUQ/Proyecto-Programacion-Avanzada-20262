@@ -40,12 +40,24 @@ import org.uniquindio.proyectoavanzadacompuparts.domain.repository.ComponenteRep
 import org.uniquindio.proyectoavanzadacompuparts.domain.repository.ReservaPreventaRepository;
 import org.uniquindio.proyectoavanzadacompuparts.domain.repository.SolicitudRMARepository;
 import org.uniquindio.proyectoavanzadacompuparts.domain.repository.VendedorRepository;
+import org.uniquindio.proyectoavanzadacompuparts.domain.factory.BuildFactory;
+import org.uniquindio.proyectoavanzadacompuparts.domain.factory.ComponenteFactory;
+import org.uniquindio.proyectoavanzadacompuparts.domain.factory.VendedorFactory;
+import org.uniquindio.proyectoavanzadacompuparts.domain.service.CatalogoService;
+import org.uniquindio.proyectoavanzadacompuparts.domain.service.CompraService;
+import org.uniquindio.proyectoavanzadacompuparts.domain.service.RmaService;
+import org.uniquindio.proyectoavanzadacompuparts.domain.service.VerificadorDeCompra;
+import org.uniquindio.proyectoavanzadacompuparts.domain.service.VerificadorDeReembolso;
+import org.uniquindio.proyectoavanzadacompuparts.domain.service.PreventaService;
+import org.uniquindio.proyectoavanzadacompuparts.domain.service.VerificadorDeReservaPreventa;
 import org.uniquindio.proyectoavanzadacompuparts.infrastructure.persistence.BuildRepositoryEnMemoria;
 import org.uniquindio.proyectoavanzadacompuparts.infrastructure.persistence.CompraRepositoryEnMemoria;
 import org.uniquindio.proyectoavanzadacompuparts.infrastructure.persistence.ComponenteRepositoryEnMemoria;
 import org.uniquindio.proyectoavanzadacompuparts.infrastructure.persistence.ReservaPreventaRepositoryEnMemoria;
 import org.uniquindio.proyectoavanzadacompuparts.infrastructure.persistence.SolicitudRMARepositoryEnMemoria;
 import org.uniquindio.proyectoavanzadacompuparts.infrastructure.persistence.VendedorRepositoryEnMemoria;
+
+import java.time.Clock;
 
 /**
  * Configuración de beans de infraestructura.
@@ -88,11 +100,28 @@ public class BeanConfiguration {
         return new VendedorRepositoryEnMemoria();
     }
 
+    // ---------- Fábricas de dominio ----------
+
+    @Bean
+    public VendedorFactory vendedorFactory() {
+        return new VendedorFactory();
+    }
+
+    @Bean
+    public ComponenteFactory componenteFactory() {
+        return new ComponenteFactory();
+    }
+
+    @Bean
+    public BuildFactory buildFactory() {
+        return new BuildFactory();
+    }
+
     // ---------- Casos de uso ----------
 
     @Bean
-    public CrearBuildUseCase crearBuildUseCase(BuildRepository buildRepository) {
-        return new CrearBuildUseCase(buildRepository);
+    public CrearBuildUseCase crearBuildUseCase(BuildRepository buildRepository, BuildFactory buildFactory) {
+        return new CrearBuildUseCase(buildRepository, buildFactory);
     }
 
     @Bean
@@ -118,8 +147,8 @@ public class BeanConfiguration {
     }
 
     @Bean
-    public PublicarPreventaUseCase publicarPreventaUseCase(ComponenteRepository componenteRepository) {
-        return new PublicarPreventaUseCase(componenteRepository);
+    public PublicarPreventaUseCase publicarPreventaUseCase(ComponenteRepository componenteRepository, Clock clock) {
+        return new PublicarPreventaUseCase(componenteRepository, clock);
     }
 
     @Bean
@@ -145,15 +174,17 @@ public class BeanConfiguration {
     @Bean
     public ReservarPreventaUseCase reservarPreventaUseCase(
             ComponenteRepository componenteRepository,
-            ReservaPreventaRepository reservaPreventaRepository) {
-        return new ReservarPreventaUseCase(componenteRepository, reservaPreventaRepository);
+            ReservaPreventaRepository reservaPreventaRepository,
+            PreventaService preventaService) {
+        return new ReservarPreventaUseCase(componenteRepository, reservaPreventaRepository, preventaService);
     }
 
     @Bean
     public CancelarReservaPreventaUseCase cancelarReservaPreventaUseCase(
             ComponenteRepository componenteRepository,
-            ReservaPreventaRepository reservaPreventaRepository) {
-        return new CancelarReservaPreventaUseCase(componenteRepository, reservaPreventaRepository);
+            ReservaPreventaRepository reservaPreventaRepository,
+            PreventaService preventaService) {
+        return new CancelarReservaPreventaUseCase(componenteRepository, reservaPreventaRepository, preventaService);
     }
 
     @Bean
@@ -170,13 +201,14 @@ public class BeanConfiguration {
     @Bean
     public RegistrarComponenteUseCase registrarComponenteUseCase(
             ComponenteRepository componenteRepository,
-            VendedorRepository vendedorRepository) {
-        return new RegistrarComponenteUseCase(componenteRepository, vendedorRepository);
+            VendedorRepository vendedorRepository,
+            ComponenteFactory componenteFactory) {
+        return new RegistrarComponenteUseCase(componenteRepository, vendedorRepository, componenteFactory);
     }
 
     @Bean
-    public RegistrarVendedorUseCase registrarVendedorUseCase(VendedorRepository vendedorRepository) {
-        return new RegistrarVendedorUseCase(vendedorRepository);
+    public RegistrarVendedorUseCase registrarVendedorUseCase(VendedorRepository vendedorRepository, VendedorFactory vendedorFactory) {
+        return new RegistrarVendedorUseCase(vendedorRepository, vendedorFactory);
     }
 
     @Bean
@@ -202,30 +234,34 @@ public class BeanConfiguration {
     @Bean
     public EliminarComponenteUseCase eliminarComponenteUseCase(
             ComponenteRepository componenteRepository,
-            BuildRepository buildRepository) {
-        return new EliminarComponenteUseCase(componenteRepository, buildRepository);
+            BuildRepository buildRepository,
+            CatalogoService catalogoService) {
+        return new EliminarComponenteUseCase(componenteRepository, buildRepository, catalogoService);
     }
 
     @Bean
     public SolicitarRMAUseCase solicitarRMAUseCase(
             CompraRepository compraRepository,
             ComponenteRepository componenteRepository,
-            SolicitudRMARepository solicitudRMARepository) {
-        return new SolicitarRMAUseCase(compraRepository, componenteRepository, solicitudRMARepository);
+            SolicitudRMARepository solicitudRMARepository,
+            RmaService rmaService) {
+        return new SolicitarRMAUseCase(compraRepository, componenteRepository, solicitudRMARepository, rmaService);
     }
 
     @Bean
     public AceptarRMAUseCase aceptarRMAUseCase(
             SolicitudRMARepository solicitudRMARepository,
-            ComponenteRepository componenteRepository) {
-        return new AceptarRMAUseCase(solicitudRMARepository, componenteRepository);
+            ComponenteRepository componenteRepository,
+            RmaService rmaService) {
+        return new AceptarRMAUseCase(solicitudRMARepository, componenteRepository, rmaService);
     }
 
     @Bean
     public RechazarRMAUseCase rechazarRMAUseCase(
             SolicitudRMARepository solicitudRMARepository,
-            ComponenteRepository componenteRepository) {
-        return new RechazarRMAUseCase(solicitudRMARepository, componenteRepository);
+            ComponenteRepository componenteRepository,
+            RmaService rmaService) {
+        return new RechazarRMAUseCase(solicitudRMARepository, componenteRepository, rmaService);
     }
 
     @Bean
@@ -242,8 +278,9 @@ public class BeanConfiguration {
     public RealizarCompraUseCase realizarCompraUseCase(
             BuildRepository buildRepository,
             ComponenteRepository componenteRepository,
-            CompraRepository compraRepository) {
-        return new RealizarCompraUseCase(buildRepository, componenteRepository, compraRepository);
+            CompraRepository compraRepository,
+            CompraService compraService) {
+        return new RealizarCompraUseCase(buildRepository, componenteRepository, compraRepository, compraService);
     }
 
     @Bean
@@ -251,16 +288,18 @@ public class BeanConfiguration {
             CompraRepository compraRepository,
             ComponenteRepository componenteRepository,
             BuildRepository buildRepository,
-            ReservaPreventaRepository reservaPreventaRepository) {
-        return new ConfirmarCompraUseCase(compraRepository, componenteRepository, buildRepository, reservaPreventaRepository);
+            ReservaPreventaRepository reservaPreventaRepository,
+            CompraService compraService) {
+        return new ConfirmarCompraUseCase(compraRepository, componenteRepository, buildRepository, reservaPreventaRepository, compraService);
     }
 
     @Bean
     public CancelarCompraUseCase cancelarCompraUseCase(
             CompraRepository compraRepository,
             ComponenteRepository componenteRepository,
-            ReservaPreventaRepository reservaPreventaRepository) {
-        return new CancelarCompraUseCase(compraRepository, componenteRepository, reservaPreventaRepository);
+            ReservaPreventaRepository reservaPreventaRepository,
+            CompraService compraService) {
+        return new CancelarCompraUseCase(compraRepository, componenteRepository, reservaPreventaRepository, compraService);
     }
 
     @Bean
@@ -272,15 +311,18 @@ public class BeanConfiguration {
     public ReembolsarCompraUseCase reembolsarCompraUseCase(
             CompraRepository compraRepository,
             ComponenteRepository componenteRepository,
-            SolicitudRMARepository solicitudRMARepository) {
-        return new ReembolsarCompraUseCase(compraRepository, componenteRepository, solicitudRMARepository);
+            SolicitudRMARepository solicitudRMARepository,
+            CompraService compraService) {
+        return new ReembolsarCompraUseCase(compraRepository, componenteRepository, solicitudRMARepository, compraService);
     }
 
     @Bean
     public ComprarReservaPreventaUseCase comprarReservaPreventaUseCase(
             ComponenteRepository componenteRepository,
             ReservaPreventaRepository reservaPreventaRepository,
-            CompraRepository compraRepository) {
-        return new ComprarReservaPreventaUseCase(componenteRepository, reservaPreventaRepository, compraRepository);
+            CompraRepository compraRepository,
+            PreventaService preventaService,
+            CompraService compraService) {
+        return new ComprarReservaPreventaUseCase(componenteRepository, reservaPreventaRepository, compraRepository, preventaService, compraService);
     }
 }

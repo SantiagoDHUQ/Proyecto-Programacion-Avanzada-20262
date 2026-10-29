@@ -6,13 +6,13 @@ import org.springframework.transaction.annotation.Transactional;
 import org.uniquindio.proyectoavanzadacompuparts.application.exception.RecursoNoEncontradoException;
 import org.uniquindio.proyectoavanzadacompuparts.domain.entity.Compra;
 import org.uniquindio.proyectoavanzadacompuparts.domain.entity.Componente;
-import org.uniquindio.proyectoavanzadacompuparts.domain.exception.ReglaDominioException;
 import org.uniquindio.proyectoavanzadacompuparts.domain.repository.CompraRepository;
 import org.uniquindio.proyectoavanzadacompuparts.domain.repository.ComponenteRepository;
 import org.uniquindio.proyectoavanzadacompuparts.domain.repository.SolicitudRMARepository;
-import org.uniquindio.proyectoavanzadacompuparts.domain.valueobject.ItemCompra;
+import org.uniquindio.proyectoavanzadacompuparts.domain.service.CompraService;
 
-import java.util.LinkedHashMap;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Map;
 
 /**
@@ -30,6 +30,7 @@ public class ReembolsarCompraUseCase {
     private final CompraRepository compraRepository;
     private final ComponenteRepository componenteRepository;
     private final SolicitudRMARepository solicitudRMARepository;
+    private final CompraService compraService;
 
     @Transactional
     public Compra ejecutar(String compraId, String compradorId, String motivo) {
@@ -37,38 +38,17 @@ public class ReembolsarCompraUseCase {
                 .orElseThrow(() -> new RecursoNoEncontradoException(
                         "No existe una Compra con ese identificador"));
 
-        // El dominio valida la transición
-        compra.validarReembolso(compradorId, motivo);
+        Map<String, Componente> componentes = componenteRepository.buscarPorItems(compra.getItems());
 
-        Map<String, Componente> componentes = new LinkedHashMap<>();
+        List<String> seriesConRmaPendiente = solicitudRMARepository.seriesConRmaPendiente(compra.getItems());
+        List<String> seriesConRmaAceptada = solicitudRMARepository.seriesConRmaAceptada(compra.getItems());
 
-        // Primero valida todas las unidades; solo después descarta y reembolsa.
-        for (ItemCompra item : compra.getItems()) {
-            Componente componente = componenteRepository.buscarPorId(item.componenteId())
-                    .orElseThrow(() -> new RecursoNoEncontradoException(
-                            "No existe un Componente con ese identificador"));
-            componentes.put(componente.getId(), componente);
+        compraService.reembolsar(compra, compradorId, motivo,
+                new ArrayList<>(componentes.values()),
+                seriesConRmaPendiente, seriesConRmaAceptada);
 
-            // El dominio valida el estado de la unidad
-            componente.unidadPorId(item.unidadId()).validarEstaEnRMA();
-
-            // Verifica que no haya RMA pendiente y que exista RMA aceptada
-            if (solicitudRMARepository.existePendientePorNumeroSerie(item.numeroSerie())) {
-                throw new ReglaDominioException("La unidad " + item.numeroSerie()
-                        + " tiene una SolicitudRMA pendiente");
-            }
-            if (!solicitudRMARepository.existeAceptadaPorNumeroSerie(item.numeroSerie())) {
-                throw new ReglaDominioException("La unidad " + item.numeroSerie()
-                        + " no tiene una SolicitudRMA aceptada");
-            }
-        }
-
-        for (ItemCompra item : compra.getItems()) {
-            componentes.get(item.componenteId()).descartarUnidad(item.unidadId());
-        }
         componentes.values().forEach(componenteRepository::guardar);
 
-        compra.solicitarReembolso(motivo);
         return compraRepository.guardar(compra);
     }
 }

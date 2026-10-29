@@ -308,13 +308,13 @@ class ComponenteControllerTest {
 
     private Componente componenteConUnidad() {
         Componente componente = componenteBase();
-        componente.agregarUnidad("SER-1");
+        componente.agregarUnidad("v-1", "SER-1", false);
         return componente;
     }
 
     private Componente componenteConPreventa() {
         Componente componente = componenteBase();
-        componente.agregarPreventa(LocalDate.now().plusDays(10));
+        componente.agregarPreventa("v-1", LocalDate.now().plusDays(10), LocalDate.now());
         return componente;
     }
 

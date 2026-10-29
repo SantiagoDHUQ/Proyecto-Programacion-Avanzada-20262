@@ -25,7 +25,7 @@ public class BuildTest {
         Componente componente = Componente.crear(id, "pieza-" + id, categoria,
                 new EspecificacionTecnica(socket, wattaje, tipoMemoria),
                 new Precio(new BigDecimal("100000"), "COP"), vendedor, 365);
-        componente.agregarUnidad("SER-" + id);
+        componente.agregarUnidad("v1", "SER-" + id, false);
         return componente;
     }
 
@@ -93,7 +93,7 @@ public class BuildTest {
         Componente cpu = Componente.crear("cpu", "CPU en preventa", CategoriaComponente.CPU,
                 new EspecificacionTecnica("AM5", 120, "DDR5"),
                 new Precio(new BigDecimal("100000"), "COP"), autorizado, 365);
-        cpu.agregarPreventa(LocalDate.now().plusDays(10));
+        cpu.agregarPreventa("v1", LocalDate.now().plusDays(10), LocalDate.now());
 
         assertThrows(ReglaDominioException.class, () -> build.agregarComponente(cpu));
     }

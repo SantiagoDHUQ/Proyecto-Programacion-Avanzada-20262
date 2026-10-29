@@ -98,13 +98,17 @@ public class Componente {
 
     /**
      * Agrega una unidad físicamente disponible.
+     * <p>
+     * El vendedor debe ser el dueño del componente (regla 9). El serial debe ser
+     * único globalmente (hecho que aporta el caso de uso).
      */
-    public UnidadInventario agregarUnidad(String numeroSerie) {
+    public UnidadInventario agregarUnidad(String vendedorId, String numeroSerie, boolean serieYaRegistrada) {
+        validarPropietario(vendedorId);
         exigir(estadoComercial != EstadoComercial.ELIMINADO,
                 "No se puede agregar stock a un componente eliminado");
         exigir(numeroSerie != null && !numeroSerie.isBlank(), "El número de serie es obligatorio");
-        exigir(!existeNumeroSerie(numeroSerie),
-                "Ya existe una unidad con ese número de serie en el componente");
+        exigir(!serieYaRegistrada && !existeNumeroSerie(numeroSerie),
+                "Ya existe una unidad con ese número de serie");
 
         UnidadInventario unidad = UnidadInventario.crearDisponible(numeroSerie);
         unidades.add(unidad);
@@ -114,14 +118,15 @@ public class Componente {
     /**
      * Publica una unidad en preventa. El comprador podrá reservarla, pero no
      * agregarla a un Build ni comprarla hasta que llegue.
+     * <p>
+     * El vendedor debe ser el dueño del componente (regla 9).
      */
-    public UnidadInventario agregarPreventa(LocalDate fechaEstimadaLlegada) {
-        exigir(estadoComercial != EstadoComercial.ELIMINADO,
-                "No se puede agregar preventa a un componente eliminado");
+    public UnidadInventario agregarPreventa(String vendedorId, LocalDate fechaEstimadaLlegada, LocalDate hoy) {
+        validarPropietario(vendedorId);
         exigir(vendedor.esAutorizado(), "Solo un vendedor autorizado puede publicar en preventa");
         exigir(!vendedor.esParticular(), "Un vendedor particular no puede publicar componentes en preventa");
 
-        UnidadInventario unidad = UnidadInventario.crearPreventa(fechaEstimadaLlegada);
+        UnidadInventario unidad = UnidadInventario.crearPreventa(fechaEstimadaLlegada, hoy);
         unidades.add(unidad);
         return unidad;
     }
@@ -142,6 +147,15 @@ public class Componente {
                 .findFirst()
                 .orElseThrow(() -> new ReglaDominioException(
                         "No existe una unidad con ese número de serie en el componente"));
+    }
+
+    public Optional<UnidadInventario> buscarUnidad(UUID unidadId) {
+        if (unidadId == null) {
+            return Optional.empty();
+        }
+        return unidades.stream()
+                .filter(unidad -> unidad.getId().equals(unidadId))
+                .findFirst();
     }
 
     public UnidadInventario reservarUnidad(UUID unidadId) {
@@ -183,11 +197,22 @@ public class Componente {
      * Recibe una unidad en preventa y le asigna su número de serie.
      */
     public void recibirPreventa(UUID unidadId, String numeroSerie) {
+        recibirPreventa(unidadId, null, numeroSerie, false);
+    }
+
+    /**
+     * Recibe una unidad en preventa y le asigna su número de serie.
+     */
+    public void recibirPreventa(UUID unidadId, String vendedorId, String numeroSerie, boolean serieYaRegistrada) {
+        if (vendedorId != null) {
+            validarPropietario(vendedorId);
+        }
         exigir(numeroSerie != null && !numeroSerie.isBlank(), "El número de serie es obligatorio");
         boolean duplicado = unidades.stream()
                 .anyMatch(unidad -> !unidad.getId().equals(unidadId)
+                        && unidad.getNumeroSerie() != null
                         && numeroSerie.equalsIgnoreCase(unidad.getNumeroSerie()));
-        exigir(!duplicado, "Ya existe una unidad con ese número de serie en el componente");
+        exigir(!(serieYaRegistrada || duplicado), "Ya existe una unidad con ese número de serie");
         unidadPorId(unidadId).recibir(numeroSerie);
     }
 
@@ -223,6 +248,11 @@ public class Componente {
         this.estadoComercial = EstadoComercial.AGOTADO;
     }
 
+    public void marcarAgotado(String vendedorId) {
+        validarPropietario(vendedorId);
+        marcarAgotado();
+    }
+
     /**
      * Vuelve a publicar un componente agotado. No permite revivir uno eliminado.
      */
@@ -230,6 +260,11 @@ public class Componente {
         exigir(estadoComercial != EstadoComercial.ELIMINADO,
                 "Un componente eliminado no puede publicarse");
         this.estadoComercial = EstadoComercial.PUBLICADO;
+    }
+
+    public void publicar(String vendedorId) {
+        validarPropietario(vendedorId);
+        publicar();
     }
 
     /**

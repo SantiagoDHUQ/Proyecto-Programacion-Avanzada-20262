@@ -6,15 +6,11 @@ import org.springframework.transaction.annotation.Transactional;
 import org.uniquindio.proyectoavanzadacompuparts.application.exception.RecursoNoEncontradoException;
 import org.uniquindio.proyectoavanzadacompuparts.domain.entity.Build;
 import org.uniquindio.proyectoavanzadacompuparts.domain.entity.Compra;
-import org.uniquindio.proyectoavanzadacompuparts.domain.entity.Componente;
-import org.uniquindio.proyectoavanzadacompuparts.domain.entity.UnidadInventario;
 import org.uniquindio.proyectoavanzadacompuparts.domain.repository.BuildRepository;
 import org.uniquindio.proyectoavanzadacompuparts.domain.repository.CompraRepository;
 import org.uniquindio.proyectoavanzadacompuparts.domain.repository.ComponenteRepository;
-import org.uniquindio.proyectoavanzadacompuparts.domain.valueobject.ItemCompra;
+import org.uniquindio.proyectoavanzadacompuparts.domain.service.CompraService;
 
-import java.util.ArrayList;
-import java.util.List;
 import java.util.UUID;
 
 /**
@@ -31,37 +27,18 @@ public class RealizarCompraUseCase {
     private final BuildRepository buildRepository;
     private final ComponenteRepository componenteRepository;
     private final CompraRepository compraRepository;
+    private final CompraService compraService;
 
     @Transactional
     public Compra ejecutar(UUID buildId, String compradorId) {
         Build build = buildRepository.buscarPorId(buildId)
                 .orElseThrow(() -> new RecursoNoEncontradoException("No existe un Build con ese identificador"));
 
-        // El dominio valida que el build esté listo para comprar
-        build.validarListoParaComprar();
+        // Una llamada de dominio
+        Compra compra = compraService.realizarDeBuild(build, compradorId);
 
-        List<ItemCompra> items = new ArrayList<>();
-        List<Componente> componentesReservados = new ArrayList<>();
-
-        for (Componente componente : build.getComponentes()) {
-            UnidadInventario unidad = componente.reservarPrimeraUnidadDisponible();
-            componentesReservados.add(componente);
-            items.add(new ItemCompra(
-                    unidad.getId(),
-                    componente.getId(),
-                    unidad.getNumeroSerie(),
-                    componente.getPrecio()
-            ));
-        }
-
-        componentesReservados.forEach(componenteRepository::guardar);
-
-        Compra compra = Compra.realizar(
-                UUID.randomUUID().toString(),
-                buildId,
-                compradorId,
-                items
-        );
+        // Guardar componentes con unidades reservadas
+        build.getComponentes().forEach(componenteRepository::guardar);
 
         return compraRepository.guardar(compra);
     }

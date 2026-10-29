@@ -12,6 +12,8 @@ import org.uniquindio.proyectoavanzadacompuparts.domain.exception.ReglaDominioEx
 import org.uniquindio.proyectoavanzadacompuparts.domain.repository.CompraRepository;
 import org.uniquindio.proyectoavanzadacompuparts.domain.repository.ComponenteRepository;
 import org.uniquindio.proyectoavanzadacompuparts.domain.repository.ReservaPreventaRepository;
+import org.uniquindio.proyectoavanzadacompuparts.domain.service.CompraService;
+import org.uniquindio.proyectoavanzadacompuparts.domain.service.PreventaService;
 import org.uniquindio.proyectoavanzadacompuparts.domain.valueobject.ItemCompra;
 
 import java.util.List;
@@ -32,44 +34,25 @@ public class ComprarReservaPreventaUseCase {
     private final ComponenteRepository componenteRepository;
     private final ReservaPreventaRepository reservaPreventaRepository;
     private final CompraRepository compraRepository;
+    private final PreventaService preventaService;
+    private final CompraService compraService;
 
     @Transactional
     public Compra ejecutar(UUID reservaId, String compradorId) {
         ReservaPreventa reserva = reservaPreventaRepository.buscarPorId(reservaId)
                 .orElseThrow(() -> new RecursoNoEncontradoException("No existe una reserva de preventa con ese identificador"));
 
-        // Validación de propiedad: solo el comprador que reservó puede comprar
-        if (!reserva.getCompradorId().equals(compradorId)) {
-            throw new ReglaDominioException("Solo el comprador que reservó puede comprar esta unidad");
-        }
-
-        // El dominio valida la transición
-        reserva.validarIniciarCompra();
+        // Validación de propiedad via servicio de dominio (cruce agregados)
+        preventaService.validarDueno(reservaId, compradorId);
 
         Componente componente = componenteRepository.buscarPorId(reserva.getComponenteId())
                 .orElseThrow(() -> new RecursoNoEncontradoException("No existe un Componente con ese identificador"));
-        UnidadInventario unidad = componente.unidadPorId(reserva.getUnidadId());
 
-        // El dominio valida el estado de la unidad para compra de reserva de preventa
-        unidad.validarParaComprarReservaPreventa();
-        unidad.validarReservaPreventaCoincide(reserva.getId());
-
-        ItemCompra item = new ItemCompra(
-                unidad.getId(),
-                componente.getId(),
-                unidad.getNumeroSerie(),
-                componente.getPrecio()
-        );
-
-        reserva.iniciarCompra();
-        Compra compra = Compra.realizar(
-                UUID.randomUUID().toString(),
-                null,
-                compradorId,
-                List.of(item)
-        );
+        // Una llamada de dominio
+        Compra compra = compraService.realizarDeReserva(reserva, componente, compradorId);
 
         reservaPreventaRepository.guardar(reserva);
+        componenteRepository.guardar(componente);
         return compraRepository.guardar(compra);
     }
 }

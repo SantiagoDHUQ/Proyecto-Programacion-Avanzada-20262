@@ -19,5 +19,17 @@ public interface BuildRepository {
 
     void eliminar(UUID id);
 
+    /**
+     * Busca todos los builds activos que contienen el componente indicado.
+     * Útil para la regla 6: no eliminar un componente que esté en un build activo.
+     */
+    List<Build> buscarActivosPorComponente(String componenteId);
 
+    default Build obtenerPorIdDeCompra(org.uniquindio.proyectoavanzadacompuparts.domain.entity.Compra compra) {
+        if (compra == null || compra.getBuildId() == null) {
+            return null;
+        }
+        return buscarPorId(compra.getBuildId())
+                .orElseThrow(() -> new org.uniquindio.proyectoavanzadacompuparts.application.exception.RecursoNoEncontradoException("No existe el Build de la compra"));
+    }
 }

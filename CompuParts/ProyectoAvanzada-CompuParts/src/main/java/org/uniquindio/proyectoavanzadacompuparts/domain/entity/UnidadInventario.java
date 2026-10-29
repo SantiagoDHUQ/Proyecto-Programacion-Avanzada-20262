@@ -40,9 +40,9 @@ public class UnidadInventario {
         return new UnidadInventario(null, numeroSerie.trim(), EstadoUnidad.DISPONIBLE, null, null);
     }
 
-    public static UnidadInventario crearPreventa(LocalDate fechaEstimadaLlegada) {
+    public static UnidadInventario crearPreventa(LocalDate fechaEstimadaLlegada, LocalDate hoy) {
         exigir(fechaEstimadaLlegada != null, "La preventa exige una fecha estimada de llegada");
-        exigir(!fechaEstimadaLlegada.isBefore(LocalDate.now()),
+        exigir(!fechaEstimadaLlegada.isBefore(hoy),
                 "La fecha estimada de llegada no puede ser anterior a hoy");
         return new UnidadInventario(null, null, EstadoUnidad.PREVENTA, fechaEstimadaLlegada, null);
     }

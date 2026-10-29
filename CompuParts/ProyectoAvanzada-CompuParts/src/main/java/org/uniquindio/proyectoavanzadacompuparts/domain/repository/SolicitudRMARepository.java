@@ -21,4 +21,8 @@ public interface SolicitudRMARepository {
 
     /** Indica si la unidad ya tiene una solicitud aceptada, requisito para reembolsar la compra. */
     boolean existeAceptadaPorNumeroSerie(String numeroSerie);
+
+    java.util.List<String> seriesConRmaPendiente(java.util.Collection<org.uniquindio.proyectoavanzadacompuparts.domain.valueobject.ItemCompra> items);
+
+    java.util.List<String> seriesConRmaAceptada(java.util.Collection<org.uniquindio.proyectoavanzadacompuparts.domain.valueobject.ItemCompra> items);
 }

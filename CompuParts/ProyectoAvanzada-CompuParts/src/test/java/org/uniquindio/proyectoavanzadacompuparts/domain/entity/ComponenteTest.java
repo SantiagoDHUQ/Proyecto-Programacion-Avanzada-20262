@@ -28,7 +28,7 @@ public class ComponenteTest {
 
     private Componente conUnidad(String id, Vendedor vendedor, Integer garantiaDias, String serial) {
         Componente componente = crear(id, vendedor, garantiaDias);
-        componente.agregarUnidad(serial);
+        componente.agregarUnidad("v1", serial, false);
         return componente;
     }
 
@@ -79,7 +79,7 @@ public class ComponenteTest {
     void agregarUnidadDisponibleAumentaElStock() {
         Componente componente = crear("1", autorizado, 365);
 
-        UnidadInventario unidad = componente.agregarUnidad("GPU-1");
+        UnidadInventario unidad = componente.agregarUnidad("v1", "GPU-1", false);
 
         assertEquals(EstadoUnidad.DISPONIBLE, unidad.getEstado());
         assertEquals("GPU-1", unidad.getNumeroSerie());
@@ -93,14 +93,14 @@ public class ComponenteTest {
     void noSePuedeAgregarDosUnidadesConElMismoSerial() {
         Componente componente = conUnidad("1", autorizado, 365, "SER-1");
 
-        assertThrows(ReglaDominioException.class, () -> componente.agregarUnidad("SER-1"));
+        assertThrows(ReglaDominioException.class, () -> componente.agregarUnidad("v1", "SER-1", false));
     }
 
     @Test
     void noSePuedeAgregarUnaUnidadSinSerial() {
         Componente componente = crear("1", autorizado, 365);
 
-        assertThrows(ReglaDominioException.class, () -> componente.agregarUnidad(" "));
+        assertThrows(ReglaDominioException.class, () -> componente.agregarUnidad("v1", " ", false));
     }
 
     @Test
@@ -185,7 +185,7 @@ public class ComponenteTest {
     void preventaSinFechaEsRechazada() {
         Componente componente = crear("1", autorizado, 365);
 
-        assertThrows(ReglaDominioException.class, () -> componente.agregarPreventa(null));
+        assertThrows(ReglaDominioException.class, () -> componente.agregarPreventa("v1", null, LocalDate.now()));
     }
 
     @Test
@@ -193,7 +193,7 @@ public class ComponenteTest {
         Componente componente = crear("1", autorizado, 365);
 
         assertThrows(ReglaDominioException.class,
-                () -> componente.agregarPreventa(LocalDate.now().minusDays(1)));
+                () -> componente.agregarPreventa("v1", LocalDate.now().minusDays(1), LocalDate.now()));
     }
 
     @Test
@@ -201,7 +201,7 @@ public class ComponenteTest {
         Componente componente = crear("1", autorizado, 365);
         LocalDate llegada = LocalDate.now().plusDays(10);
 
-        UnidadInventario unidad = componente.agregarPreventa(llegada);
+        UnidadInventario unidad = componente.agregarPreventa("v1", llegada, LocalDate.now());
 
         assertEquals(EstadoUnidad.PREVENTA, unidad.getEstado());
         assertNull(unidad.getNumeroSerie());
@@ -216,13 +216,13 @@ public class ComponenteTest {
         Componente componente = crear("1", particular, null);
 
         assertThrows(ReglaDominioException.class,
-                () -> componente.agregarPreventa(LocalDate.now().plusDays(10)));
+                () -> componente.agregarPreventa("v1", LocalDate.now().plusDays(10), LocalDate.now()));
     }
 
     @Test
     void reservarPreventaYLuegoRecibirLaDejaReservadaParaElComprador() {
         Componente componente = crear("1", autorizado, 365);
-        UnidadInventario unidad = componente.agregarPreventa(LocalDate.now().plusDays(10));
+        UnidadInventario unidad = componente.agregarPreventa("v1", LocalDate.now().plusDays(10), LocalDate.now());
         UUID reservaId = UUID.randomUUID();
 
         componente.reservarPreventa(unidad.getId(), reservaId);
@@ -241,7 +241,7 @@ public class ComponenteTest {
     @Test
     void recibirUnaPreventaSinReservaLaDejaDisponible() {
         Componente componente = crear("1", autorizado, 365);
-        UnidadInventario unidad = componente.agregarPreventa(LocalDate.now().plusDays(10));
+        UnidadInventario unidad = componente.agregarPreventa("v1", LocalDate.now().plusDays(10), LocalDate.now());
 
         componente.recibirPreventa(unidad.getId(), "SER-LLEGADA");
 
@@ -252,7 +252,7 @@ public class ComponenteTest {
     @Test
     void recibirPreventaExigeNumeroDeSerie() {
         Componente componente = crear("1", autorizado, 365);
-        UnidadInventario unidad = componente.agregarPreventa(LocalDate.now().plusDays(10));
+        UnidadInventario unidad = componente.agregarPreventa("v1", LocalDate.now().plusDays(10), LocalDate.now());
 
         assertThrows(ReglaDominioException.class, () -> componente.recibirPreventa(unidad.getId(), " "));
     }
@@ -260,7 +260,7 @@ public class ComponenteTest {
     @Test
     void liberarReservaPreventaLaDevuelveAPreventa() {
         Componente componente = crear("1", autorizado, 365);
-        UnidadInventario unidad = componente.agregarPreventa(LocalDate.now().plusDays(10));
+        UnidadInventario unidad = componente.agregarPreventa("v1", LocalDate.now().plusDays(10), LocalDate.now());
         componente.reservarPreventa(unidad.getId(), UUID.randomUUID());
 
         componente.liberarReservaPreventa(unidad.getId());
@@ -273,7 +273,7 @@ public class ComponenteTest {
     @Test
     void liberarUnaCompraSobreUnaUnidadReservadaEnPreventaLaMantieneParaElComprador() {
         Componente componente = crear("1", autorizado, 365);
-        UnidadInventario unidad = componente.agregarPreventa(LocalDate.now().plusDays(10));
+        UnidadInventario unidad = componente.agregarPreventa("v1", LocalDate.now().plusDays(10), LocalDate.now());
         UUID reservaId = UUID.randomUUID();
         componente.reservarPreventa(unidad.getId(), reservaId);
         componente.recibirPreventa(unidad.getId(), "SER-LLEGADA");
@@ -328,7 +328,7 @@ public class ComponenteTest {
         Componente componente = crear("1", autorizado, 365);
         componente.eliminar();
 
-        assertThrows(ReglaDominioException.class, () -> componente.agregarUnidad("SER-1"));
+        assertThrows(ReglaDominioException.class, () -> componente.agregarUnidad("v1", "SER-1", false));
     }
 
     @Test

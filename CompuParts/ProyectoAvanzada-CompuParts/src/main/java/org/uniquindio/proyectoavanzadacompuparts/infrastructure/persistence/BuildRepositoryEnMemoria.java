@@ -32,4 +32,12 @@ public class BuildRepositoryEnMemoria implements BuildRepository {
     public void eliminar(UUID id) {
         almacenamiento.remove(id);
     }
+
+    @Override
+    public List<Build> buscarActivosPorComponente(String componenteId) {
+        return almacenamiento.values().stream()
+                .filter(Build::estaActivo)
+                .filter(build -> build.contieneComponente(componenteId))
+                .toList();
+    }
 }

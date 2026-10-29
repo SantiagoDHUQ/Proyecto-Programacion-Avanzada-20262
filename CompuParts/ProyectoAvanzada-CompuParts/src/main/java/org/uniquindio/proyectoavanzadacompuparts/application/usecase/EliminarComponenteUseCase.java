@@ -6,11 +6,11 @@ import org.springframework.transaction.annotation.Transactional;
 import org.uniquindio.proyectoavanzadacompuparts.application.exception.RecursoNoEncontradoException;
 import org.uniquindio.proyectoavanzadacompuparts.domain.entity.Build;
 import org.uniquindio.proyectoavanzadacompuparts.domain.entity.Componente;
-import org.uniquindio.proyectoavanzadacompuparts.domain.exception.ReglaDominioException;
 import org.uniquindio.proyectoavanzadacompuparts.domain.repository.BuildRepository;
 import org.uniquindio.proyectoavanzadacompuparts.domain.repository.ComponenteRepository;
+import org.uniquindio.proyectoavanzadacompuparts.domain.service.CatalogoService;
 
-import java.util.Objects;
+import java.util.List;
 
 /**
  * Caso de uso que elimina lógicamente un Componente del catálogo.
@@ -25,23 +25,17 @@ public class EliminarComponenteUseCase {
 
     private final ComponenteRepository componenteRepository;
     private final BuildRepository buildRepository;
+    private final CatalogoService catalogoService;
 
     @Transactional
     public void ejecutar(String componenteId, String vendedorId) {
         Componente componente = componenteRepository.buscarPorId(componenteId)
                 .orElseThrow(() -> new RecursoNoEncontradoException("No existe un Componente con ese identificador"));
 
-        componente.validarPropietario(vendedorId);
+        List<Build> buildsActivos = buildRepository.buscarActivosPorComponente(componenteId);
 
-        boolean estaEnBuildActivo = buildRepository.listarTodos().stream()
-                .filter(Build::estaActivo)
-                .anyMatch(build -> build.contieneComponente(componenteId));
+        catalogoService.eliminarComponente(componente, vendedorId, buildsActivos);
 
-        if (estaEnBuildActivo) {
-            throw new ReglaDominioException("El componente pertenece a un Build activo; solo puede marcarse como agotado");
-        }
-
-        componente.eliminar();
         componenteRepository.guardar(componente);
     }
 }

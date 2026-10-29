@@ -6,9 +6,9 @@ import org.springframework.transaction.annotation.Transactional;
 import org.uniquindio.proyectoavanzadacompuparts.application.exception.RecursoNoEncontradoException;
 import org.uniquindio.proyectoavanzadacompuparts.domain.entity.Componente;
 import org.uniquindio.proyectoavanzadacompuparts.domain.entity.SolicitudRMA;
-import org.uniquindio.proyectoavanzadacompuparts.domain.entity.UnidadInventario;
 import org.uniquindio.proyectoavanzadacompuparts.domain.repository.ComponenteRepository;
 import org.uniquindio.proyectoavanzadacompuparts.domain.repository.SolicitudRMARepository;
+import org.uniquindio.proyectoavanzadacompuparts.domain.service.RmaService;
 
 /**
  * Caso de uso, del lado del vendedor dueño, que acepta una SolicitudRMA.
@@ -23,6 +23,7 @@ public class AceptarRMAUseCase {
 
     private final SolicitudRMARepository solicitudRMARepository;
     private final ComponenteRepository componenteRepository;
+    private final RmaService rmaService;
 
     @Transactional
     public SolicitudRMA ejecutar(String solicitudId, String vendedorId) {
@@ -34,15 +35,9 @@ public class AceptarRMAUseCase {
                 .orElseThrow(() -> new RecursoNoEncontradoException(
                         "No existe el Componente de la SolicitudRMA"));
 
-        componente.validarPropietario(vendedorId);
+        // Una llamada de dominio
+        rmaService.aceptar(solicitud, componente, vendedorId);
 
-        // El dominio valida la transición
-        solicitud.validarAceptar();
-
-        UnidadInventario unidad = componente.unidadPorNumeroSerie(solicitud.getNumeroSerie());
-        unidad.validarEstaEnRMA();
-
-        solicitud.aceptar();
         return solicitudRMARepository.guardar(solicitud);
     }
 }

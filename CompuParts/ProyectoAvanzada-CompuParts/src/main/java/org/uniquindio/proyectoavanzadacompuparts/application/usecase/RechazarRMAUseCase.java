@@ -6,9 +6,9 @@ import org.springframework.transaction.annotation.Transactional;
 import org.uniquindio.proyectoavanzadacompuparts.application.exception.RecursoNoEncontradoException;
 import org.uniquindio.proyectoavanzadacompuparts.domain.entity.Componente;
 import org.uniquindio.proyectoavanzadacompuparts.domain.entity.SolicitudRMA;
-import org.uniquindio.proyectoavanzadacompuparts.domain.entity.UnidadInventario;
 import org.uniquindio.proyectoavanzadacompuparts.domain.repository.ComponenteRepository;
 import org.uniquindio.proyectoavanzadacompuparts.domain.repository.SolicitudRMARepository;
+import org.uniquindio.proyectoavanzadacompuparts.domain.service.RmaService;
 
 /**
  * Caso de uso, del lado del vendedor dueño, que rechaza una SolicitudRMA.
@@ -23,6 +23,7 @@ public class RechazarRMAUseCase {
 
     private final SolicitudRMARepository solicitudRMARepository;
     private final ComponenteRepository componenteRepository;
+    private final RmaService rmaService;
 
     @Transactional
     public SolicitudRMA ejecutar(String solicitudId, String vendedorId, String motivo) {
@@ -34,17 +35,9 @@ public class RechazarRMAUseCase {
                 .orElseThrow(() -> new RecursoNoEncontradoException(
                         "No existe el Componente de la SolicitudRMA"));
 
-        componente.validarPropietario(vendedorId);
+        // Una llamada de dominio
+        rmaService.rechazar(solicitud, componente, vendedorId, motivo);
 
-        // El dominio valida la transición y el motivo
-        solicitud.validarRechazar(motivo);
-
-        UnidadInventario unidad = componente.unidadPorNumeroSerie(solicitud.getNumeroSerie());
-        unidad.validarEstaEnRMA();
-
-        solicitud.rechazar(motivo);
-        unidad.rechazarRMA();
-        componenteRepository.guardar(componente);
         return solicitudRMARepository.guardar(solicitud);
     }
 }
