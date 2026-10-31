@@ -24,5 +24,7 @@ public interface ComponenteRepository {
 
     void eliminar(String id);
 
+    List<Componente> buscarPorIds(List<String> ids);
+
     Map<String, Componente> buscarPorItems(java.util.Collection<org.uniquindio.proyectoavanzadacompuparts.domain.valueobject.ItemCompra> items);
 }

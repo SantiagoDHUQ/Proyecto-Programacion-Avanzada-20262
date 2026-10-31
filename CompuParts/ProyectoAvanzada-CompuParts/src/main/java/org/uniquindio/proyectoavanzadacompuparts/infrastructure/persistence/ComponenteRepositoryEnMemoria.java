@@ -44,6 +44,23 @@ public class ComponenteRepositoryEnMemoria implements ComponenteRepository {
     }
 
     @Override
+    public List<Componente> buscarPorIds(List<String> ids) {
+        List<Componente> resultado = new ArrayList<>();
+        if (ids == null) {
+            return resultado;
+        }
+        for (String id : ids) {
+            if (id == null) {
+                continue;
+            }
+            Componente componente = buscarPorId(id)
+                    .orElseThrow(() -> new org.uniquindio.proyectoavanzadacompuparts.application.exception.RecursoNoEncontradoException("No existe un Componente con ese identificador"));
+            resultado.add(componente);
+        }
+        return resultado;
+    }
+
+    @Override
     public Map<String, Componente> buscarPorItems(Collection<ItemCompra> items) {
         Map<String, Componente> componentes = new LinkedHashMap<>();
         if (items == null) {

@@ -38,6 +38,14 @@ public class Build {
         return new Build(null, new ArrayList<>(), EstadoBuild.EN_CONSTRUCCION);
     }
 
+    public static Build crear(List<Componente> componentes) {
+        Build build = new Build(null, new ArrayList<>(), EstadoBuild.EN_CONSTRUCCION);
+        if (componentes != null) {
+            componentes.forEach(build::agregarComponente);
+        }
+        return build;
+    }
+
     public static Build reconstruir(UUID id, List<Componente> componentes, EstadoBuild estado) {
         exigir(id != null, "El identificador del Build es obligatorio");
         exigir(estado != null, "El estado del Build es obligatorio");

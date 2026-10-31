@@ -120,8 +120,8 @@ public class BeanConfiguration {
     // ---------- Casos de uso ----------
 
     @Bean
-    public CrearBuildUseCase crearBuildUseCase(BuildRepository buildRepository, BuildFactory buildFactory) {
-        return new CrearBuildUseCase(buildRepository, buildFactory);
+    public CrearBuildUseCase crearBuildUseCase(BuildRepository buildRepository, ComponenteRepository componenteRepository, BuildFactory buildFactory) {
+        return new CrearBuildUseCase(buildRepository, componenteRepository, buildFactory);
     }
 
     @Bean

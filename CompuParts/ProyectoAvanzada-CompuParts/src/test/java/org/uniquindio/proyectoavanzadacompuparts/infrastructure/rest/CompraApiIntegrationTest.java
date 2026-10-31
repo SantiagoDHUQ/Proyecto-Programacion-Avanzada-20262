@@ -76,19 +76,14 @@ public class CompraApiIntegrationTest {
         crearComponente(board, vendedorId, "MOTHERBOARD", "AM5", 80, "DDR5", prefijo + "-SER-MB");
         crearComponente(psu, vendedorId, "PSU", null, 500, null, prefijo + "-SER-PSU");
 
-        MvcResult buildResult = mockMvc.perform(post("/api/builds"))
+        MvcResult buildResult = mockMvc.perform(post("/api/builds")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                {"componenteIds":["%s","%s","%s"]}
+                                """.formatted(cpu, board, psu)))
                 .andExpect(status().isCreated())
                 .andReturn();
         String buildId = JsonPath.read(buildResult.getResponse().getContentAsString(), "$.buildId");
-
-        for (String componenteId : List.of(cpu, board, psu)) {
-            mockMvc.perform(post("/api/builds/{buildId}/componentes", buildId)
-                            .contentType(MediaType.APPLICATION_JSON)
-                            .content("""
-                                    {"componenteId":"%s"}
-                                    """.formatted(componenteId)))
-                    .andExpect(status().isOk());
-        }
 
         mockMvc.perform(post("/api/builds/{buildId}/listo-para-compra", buildId))
                 .andExpect(status().isOk())
@@ -179,18 +174,14 @@ public class CompraApiIntegrationTest {
         crearComponente(board, vendedorId, "MOTHERBOARD", "AM5", 80, "DDR5", prefijo + "-SER-MB");
         crearComponente(psu, vendedorId, "PSU", null, 500, null, prefijo + "-SER-PSU");
 
-        MvcResult buildResult = mockMvc.perform(post("/api/builds"))
+        MvcResult buildResult = mockMvc.perform(post("/api/builds")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                {"componenteIds":["%s","%s","%s"]}
+                                """.formatted(cpu, board, psu)))
                 .andExpect(status().isCreated())
                 .andReturn();
         String buildId = JsonPath.read(buildResult.getResponse().getContentAsString(), "$.buildId");
-        for (String componenteId : List.of(cpu, board, psu)) {
-            mockMvc.perform(post("/api/builds/{buildId}/componentes", buildId)
-                            .contentType(MediaType.APPLICATION_JSON)
-                            .content("""
-                                    {"componenteId":"%s"}
-                                    """.formatted(componenteId)))
-                    .andExpect(status().isOk());
-        }
 
         mockMvc.perform(post("/api/compras")
                         .contentType(MediaType.APPLICATION_JSON)

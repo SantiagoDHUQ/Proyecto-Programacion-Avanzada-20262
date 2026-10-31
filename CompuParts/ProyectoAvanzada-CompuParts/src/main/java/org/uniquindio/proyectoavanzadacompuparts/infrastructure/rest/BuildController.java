@@ -10,6 +10,7 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.servlet.support.ServletUriComponentsBuilder;
 import org.uniquindio.proyectoavanzadacompuparts.application.dto.request.AgregarComponenteABuildRequest;
+import org.uniquindio.proyectoavanzadacompuparts.application.dto.request.CrearBuildRequest;
 import org.uniquindio.proyectoavanzadacompuparts.application.dto.response.BuildResponse;
 import org.uniquindio.proyectoavanzadacompuparts.application.usecase.AgregarComponenteABuildUseCase;
 import org.uniquindio.proyectoavanzadacompuparts.application.usecase.ConsultarBuildUseCase;
@@ -48,8 +49,8 @@ public class BuildController {
     }
 
     @PostMapping
-    public ResponseEntity<BuildResponse> crear() {
-        Build build = crearBuildUseCase.ejecutar();
+    public ResponseEntity<BuildResponse> crear(@Valid @RequestBody CrearBuildRequest request) {
+        Build build = crearBuildUseCase.ejecutar(request.componenteIds());
 
         BuildResponse response = mapper.toResponse(build);
 

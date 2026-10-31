@@ -56,15 +56,20 @@ class BuildControllerTest {
     void debeCrearUnBuild() throws Exception {
         Build build = Build.crear();
         BuildResponse response = BuildResponse.from(build);
-        when(crearBuildUseCase.ejecutar()).thenReturn(build);
+        when(crearBuildUseCase.ejecutar(List.of("comp-1"))).thenReturn(build);
         when(mapper.toResponse(build)).thenReturn(response);
 
-        mockMvc.perform(post("/api/builds"))
+        mockMvc.perform(post("/api/builds")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                {"componenteIds":["comp-1"]}
+                                """))
                 .andExpect(status().isCreated())
                 .andExpect(header().string("Location", containsString("/api/builds/" + build.getId())))
                 .andExpect(jsonPath("$.buildId").value(build.getId().toString()))
                 .andExpect(jsonPath("$.estado").value("EN_CONSTRUCCION"));
 
+        verify(crearBuildUseCase).ejecutar(List.of("comp-1"));
         verify(mapper).toResponse(build);
     }
 
