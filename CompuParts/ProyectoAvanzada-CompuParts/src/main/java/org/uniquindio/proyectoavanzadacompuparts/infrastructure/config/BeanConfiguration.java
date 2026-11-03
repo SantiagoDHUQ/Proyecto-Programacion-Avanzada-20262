@@ -50,12 +50,7 @@ import org.uniquindio.proyectoavanzadacompuparts.domain.service.VerificadorDeCom
 import org.uniquindio.proyectoavanzadacompuparts.domain.service.VerificadorDeReembolso;
 import org.uniquindio.proyectoavanzadacompuparts.domain.service.PreventaService;
 import org.uniquindio.proyectoavanzadacompuparts.domain.service.VerificadorDeReservaPreventa;
-import org.uniquindio.proyectoavanzadacompuparts.infrastructure.persistence.BuildRepositoryEnMemoria;
-import org.uniquindio.proyectoavanzadacompuparts.infrastructure.persistence.CompraRepositoryEnMemoria;
-import org.uniquindio.proyectoavanzadacompuparts.infrastructure.persistence.ComponenteRepositoryEnMemoria;
-import org.uniquindio.proyectoavanzadacompuparts.infrastructure.persistence.ReservaPreventaRepositoryEnMemoria;
-import org.uniquindio.proyectoavanzadacompuparts.infrastructure.persistence.SolicitudRMARepositoryEnMemoria;
-import org.uniquindio.proyectoavanzadacompuparts.infrastructure.persistence.VendedorRepositoryEnMemoria;
+
 
 import java.time.Clock;
 
@@ -67,38 +62,6 @@ import java.time.Clock;
  */
 @Configuration
 public class BeanConfiguration {
-
-    // ---------- Adaptadores de persistencia ----------
-
-    @Bean
-    public BuildRepository buildRepository() {
-        return new BuildRepositoryEnMemoria();
-    }
-
-    @Bean
-    public ComponenteRepository componenteRepository() {
-        return new ComponenteRepositoryEnMemoria();
-    }
-
-    @Bean
-    public CompraRepository compraRepository() {
-        return new CompraRepositoryEnMemoria();
-    }
-
-    @Bean
-    public ReservaPreventaRepository reservaPreventaRepository() {
-        return new ReservaPreventaRepositoryEnMemoria();
-    }
-
-    @Bean
-    public SolicitudRMARepository solicitudRMARepository() {
-        return new SolicitudRMARepositoryEnMemoria();
-    }
-
-    @Bean
-    public VendedorRepository vendedorRepository() {
-        return new VendedorRepositoryEnMemoria();
-    }
 
     // ---------- Fábricas de dominio ----------
 

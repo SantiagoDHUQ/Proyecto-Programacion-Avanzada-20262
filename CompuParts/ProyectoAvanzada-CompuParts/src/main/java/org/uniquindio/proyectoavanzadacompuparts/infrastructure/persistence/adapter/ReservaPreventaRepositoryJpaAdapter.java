@@ -1,44 +1,53 @@
-package org.uniquindio.proyectoavanzadacompuparts.infrastructure.persistence;
+package org.uniquindio.proyectoavanzadacompuparts.infrastructure.persistence.adapter;
 
+import lombok.RequiredArgsConstructor;
+import org.springframework.context.annotation.Primary;
+import org.springframework.stereotype.Component;
 import org.uniquindio.proyectoavanzadacompuparts.domain.entity.ReservaPreventa;
 import org.uniquindio.proyectoavanzadacompuparts.domain.repository.ReservaPreventaRepository;
 import org.uniquindio.proyectoavanzadacompuparts.domain.valueobject.EstadoReservaPreventa;
 import org.uniquindio.proyectoavanzadacompuparts.domain.valueobject.ItemCompra;
+import org.uniquindio.proyectoavanzadacompuparts.infrastructure.persistence.jpa.mapper.ReservaPreventaEntityMapper;
+import org.uniquindio.proyectoavanzadacompuparts.infrastructure.persistence.jpa.repository.ReservaPreventaJpaRepository;
 
 import java.util.ArrayList;
 import java.util.Collection;
-import java.util.HashMap;
 import java.util.List;
-import java.util.Map;
 import java.util.Optional;
 import java.util.UUID;
+import java.util.stream.Collectors;
 
-/**
- * Implementación en memoria del puerto de reservas de preventa.
- */
-public class ReservaPreventaRepositoryEnMemoria implements ReservaPreventaRepository {
+@Component
+@Primary
+@RequiredArgsConstructor
+public class ReservaPreventaRepositoryJpaAdapter implements ReservaPreventaRepository {
 
-    private final Map<UUID, ReservaPreventa> almacenamiento = new HashMap<>();
+    private final ReservaPreventaJpaRepository jpaRepository;
+    private final ReservaPreventaEntityMapper mapper;
 
     @Override
     public ReservaPreventa guardar(ReservaPreventa reserva) {
-        almacenamiento.put(reserva.getId(), reserva);
-        return reserva;
+        var entity = mapper.toEntity(reserva);
+        var saved = jpaRepository.save(entity);
+        return mapper.toDomain(saved);
     }
 
     @Override
     public Optional<ReservaPreventa> buscarPorId(UUID id) {
-        return Optional.ofNullable(almacenamiento.get(id));
+        return jpaRepository.findById(id).map(mapper::toDomain);
     }
 
     @Override
     public List<ReservaPreventa> listarTodas() {
-        return new ArrayList<>(almacenamiento.values());
+        return jpaRepository.findAll().stream()
+                .map(mapper::toDomain)
+                .collect(Collectors.toList());
     }
 
     @Override
     public Optional<ReservaPreventa> buscarActivaPorUnidad(UUID unidadId) {
-        return almacenamiento.values().stream()
+        return jpaRepository.findAll().stream()
+                .map(mapper::toDomain)
                 .filter(reserva -> reserva.getUnidadId().equals(unidadId))
                 .filter(reserva -> reserva.getEstado() == EstadoReservaPreventa.ACTIVA)
                 .findFirst();
@@ -46,7 +55,8 @@ public class ReservaPreventaRepositoryEnMemoria implements ReservaPreventaReposi
 
     @Override
     public Optional<ReservaPreventa> buscarVigentePorUnidad(UUID unidadId) {
-        return almacenamiento.values().stream()
+        return jpaRepository.findAll().stream()
+                .map(mapper::toDomain)
                 .filter(reserva -> reserva.getUnidadId().equals(unidadId))
                 .filter(reserva -> reserva.getEstado().estaVigente())
                 .findFirst();
@@ -54,8 +64,9 @@ public class ReservaPreventaRepositoryEnMemoria implements ReservaPreventaReposi
 
     @Override
     public boolean esDueno(UUID reservaId, String compradorId) {
-        ReservaPreventa reserva = almacenamiento.get(reservaId);
-        return reserva != null && reserva.getCompradorId().equals(compradorId);
+        return buscarPorId(reservaId)
+                .map(reserva -> reserva.getCompradorId().equals(compradorId))
+                .orElse(false);
     }
 
     @Override

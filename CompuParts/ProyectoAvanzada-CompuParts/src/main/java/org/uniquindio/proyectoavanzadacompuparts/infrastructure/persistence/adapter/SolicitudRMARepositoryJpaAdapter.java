@@ -1,33 +1,46 @@
-package org.uniquindio.proyectoavanzadacompuparts.infrastructure.persistence;
+package org.uniquindio.proyectoavanzadacompuparts.infrastructure.persistence.adapter;
 
+import lombok.RequiredArgsConstructor;
+import org.springframework.context.annotation.Primary;
+import org.springframework.stereotype.Component;
 import org.uniquindio.proyectoavanzadacompuparts.domain.entity.SolicitudRMA;
 import org.uniquindio.proyectoavanzadacompuparts.domain.repository.SolicitudRMARepository;
 import org.uniquindio.proyectoavanzadacompuparts.domain.valueobject.EstadoSolicitudRMA;
 import org.uniquindio.proyectoavanzadacompuparts.domain.valueobject.ItemCompra;
+import org.uniquindio.proyectoavanzadacompuparts.infrastructure.persistence.jpa.mapper.SolicitudRMAEntityMapper;
+import org.uniquindio.proyectoavanzadacompuparts.infrastructure.persistence.jpa.repository.SolicitudRMAJpaRepository;
 
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.List;
+import java.util.Optional;
+import java.util.stream.Collectors;
 
-/**
- * Implementación en memoria del puerto de persistencia del agregado SolicitudRMA.
- */
-public class SolicitudRMARepositoryEnMemoria implements SolicitudRMARepository {
+@Component
+@Primary
+@RequiredArgsConstructor
+public class SolicitudRMARepositoryJpaAdapter implements SolicitudRMARepository {
 
-    private final Map<String, SolicitudRMA> almacenamiento = new HashMap<>();
+    private final SolicitudRMAJpaRepository jpaRepository;
+    private final SolicitudRMAEntityMapper mapper;
 
     @Override
     public SolicitudRMA guardar(SolicitudRMA solicitud) {
-        almacenamiento.put(solicitud.getId(), solicitud);
-        return solicitud;
+        var entity = mapper.toEntity(solicitud);
+        var saved = jpaRepository.save(entity);
+        return mapper.toDomain(saved);
     }
 
     @Override
     public Optional<SolicitudRMA> buscarPorId(String id) {
-        return Optional.ofNullable(almacenamiento.get(id));
+        return jpaRepository.findById(id).map(mapper::toDomain);
     }
 
     @Override
     public List<SolicitudRMA> listarTodos() {
-        return new ArrayList<>(almacenamiento.values());
+        return jpaRepository.findAll().stream()
+                .map(mapper::toDomain)
+                .collect(Collectors.toList());
     }
 
     @Override
@@ -35,8 +48,8 @@ public class SolicitudRMARepositoryEnMemoria implements SolicitudRMARepository {
         if (numeroSerie == null || numeroSerie.isBlank()) {
             return false;
         }
-        return almacenamiento.values().stream()
-                .anyMatch(s -> s.getNumeroSerie().equalsIgnoreCase(numeroSerie.trim())
+        return jpaRepository.findAll().stream()
+                .anyMatch(s -> s.getNumeroSerie() != null && s.getNumeroSerie().equalsIgnoreCase(numeroSerie.trim())
                         && s.getEstado() == EstadoSolicitudRMA.PENDIENTE);
     }
 
@@ -45,8 +58,8 @@ public class SolicitudRMARepositoryEnMemoria implements SolicitudRMARepository {
         if (numeroSerie == null || numeroSerie.isBlank()) {
             return false;
         }
-        return almacenamiento.values().stream()
-                .anyMatch(s -> s.getNumeroSerie().equalsIgnoreCase(numeroSerie.trim())
+        return jpaRepository.findAll().stream()
+                .anyMatch(s -> s.getNumeroSerie() != null && s.getNumeroSerie().equalsIgnoreCase(numeroSerie.trim())
                         && s.getEstado() == EstadoSolicitudRMA.ACEPTADA);
     }
 
