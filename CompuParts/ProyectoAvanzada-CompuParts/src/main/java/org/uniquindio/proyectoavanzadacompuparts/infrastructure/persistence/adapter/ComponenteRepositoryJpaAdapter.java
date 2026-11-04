@@ -9,6 +9,7 @@ import org.uniquindio.proyectoavanzadacompuparts.domain.entity.Vendedor;
 import org.uniquindio.proyectoavanzadacompuparts.domain.repository.ComponenteRepository;
 import org.uniquindio.proyectoavanzadacompuparts.domain.repository.VendedorRepository;
 import org.uniquindio.proyectoavanzadacompuparts.domain.valueobject.ItemCompra;
+import org.uniquindio.proyectoavanzadacompuparts.infrastructure.persistence.jpa.entity.ComponenteEntity;
 import org.uniquindio.proyectoavanzadacompuparts.infrastructure.persistence.jpa.mapper.ComponenteEntityMapper;
 import org.uniquindio.proyectoavanzadacompuparts.infrastructure.persistence.jpa.repository.ComponenteJpaRepository;
 
@@ -40,20 +41,24 @@ public class ComponenteRepositoryJpaAdapter implements ComponenteRepository {
 
     @Override
     public Optional<Componente> buscarPorId(String id) {
-        return jpaRepository.findById(id).map(entity -> {
-            Vendedor vendedor = vendedorRepository.buscarPorId(entity.getVendedorId())
-                    .orElseThrow(() -> new RecursoNoEncontradoException("No existe un Vendedor con ese identificador"));
-            return mapper.toDomain(entity, vendedor);
-        });
+        return jpaRepository.findById(id)
+                .filter(ComponenteEntity::isActivo)
+                .map(entity -> {
+                    Vendedor vendedor = vendedorRepository.buscarPorId(entity.getVendedorId())
+                            .orElseThrow(() -> new RecursoNoEncontradoException("No existe un Vendedor con ese identificador"));
+                    return mapper.toDomain(entity, vendedor);
+                });
     }
 
     @Override
     public List<Componente> listarTodos() {
-        return jpaRepository.findAll().stream().map(entity -> {
-            Vendedor vendedor = vendedorRepository.buscarPorId(entity.getVendedorId())
-                    .orElseThrow(() -> new RecursoNoEncontradoException("No existe un Vendedor con ese identificador"));
-            return mapper.toDomain(entity, vendedor);
-        }).collect(Collectors.toList());
+        return jpaRepository.findAll().stream()
+                .filter(ComponenteEntity::isActivo)
+                .map(entity -> {
+                    Vendedor vendedor = vendedorRepository.buscarPorId(entity.getVendedorId())
+                            .orElseThrow(() -> new RecursoNoEncontradoException("No existe un Vendedor con ese identificador"));
+                    return mapper.toDomain(entity, vendedor);
+                }).collect(Collectors.toList());
     }
 
     @Override
@@ -62,13 +67,17 @@ public class ComponenteRepositoryJpaAdapter implements ComponenteRepository {
             return false;
         }
         return jpaRepository.findAll().stream()
+                .filter(ComponenteEntity::isActivo)
                 .anyMatch(componente -> componente.getUnidades().stream()
                         .anyMatch(u -> numeroSerie.equalsIgnoreCase(u.getNumeroSerie())));
     }
 
     @Override
     public void eliminar(String id) {
-        jpaRepository.deleteById(id);
+        jpaRepository.findById(id).ifPresent(entity -> {
+            entity.setActivo(false);
+            jpaRepository.save(entity);
+        });
     }
 
     @Override

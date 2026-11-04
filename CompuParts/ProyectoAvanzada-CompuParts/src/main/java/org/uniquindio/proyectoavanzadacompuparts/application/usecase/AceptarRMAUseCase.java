@@ -37,6 +37,7 @@ public class AceptarRMAUseCase {
 
         // Una llamada de dominio
         rmaService.aceptar(solicitud, componente, vendedorId);
+        componenteRepository.guardar(componente);
 
         return solicitudRMARepository.guardar(solicitud);
     }

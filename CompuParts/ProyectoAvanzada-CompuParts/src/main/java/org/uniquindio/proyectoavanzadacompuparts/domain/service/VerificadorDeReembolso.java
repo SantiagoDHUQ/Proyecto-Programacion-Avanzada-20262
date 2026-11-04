@@ -12,9 +12,10 @@ import java.util.List;
 /**
  * Servicio de dominio para validar reglas de negocio que cruzan agregados
  * relacionados con el reembolso de compras.
- * <p>
+ * 
  * No depende de Spring: es una clase POJO del dominio. Se configura como bean
- * en {@link org.uniquindio.proyectoavanzadacompuparts.infrastructure.config.DomainServiceConfig}.
+ * en
+ * {@link org.uniquindio.proyectoavanzadacompuparts.infrastructure.config.DomainServiceConfig}.
  */
 public class VerificadorDeReembolso {
 

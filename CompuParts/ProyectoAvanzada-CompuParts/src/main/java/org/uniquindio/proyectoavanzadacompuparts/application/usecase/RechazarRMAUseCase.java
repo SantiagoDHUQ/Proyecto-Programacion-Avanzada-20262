@@ -37,6 +37,7 @@ public class RechazarRMAUseCase {
 
         // Una llamada de dominio
         rmaService.rechazar(solicitud, componente, vendedorId, motivo);
+        componenteRepository.guardar(componente);
 
         return solicitudRMARepository.guardar(solicitud);
     }

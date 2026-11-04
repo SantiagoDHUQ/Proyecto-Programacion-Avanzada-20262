@@ -31,7 +31,7 @@ import java.util.List;
 public class ComponenteEntity {
 
     @Id
-    @Column(length = 50)
+    @Column(length = 100)
     private String id;
 
     @Column(nullable = false, length = 150)
@@ -47,7 +47,7 @@ public class ComponenteEntity {
     @Embedded
     private PrecioEmbeddable precio;
 
-    @Column(name = "vendedor_id", nullable = false, length = 50)
+    @Column(name = "vendedor_id", nullable = false, length = 100)
     private String vendedorId;
 
     @Embedded
@@ -56,6 +56,9 @@ public class ComponenteEntity {
     @Enumerated(EnumType.STRING)
     @Column(name = "estado_comercial", nullable = false, length = 20)
     private EstadoComercial estadoComercial;
+
+    @Column(nullable = false, columnDefinition = "boolean default true")
+    private boolean activo = true;
 
     @OneToMany(cascade = CascadeType.ALL, orphanRemoval = true, fetch = FetchType.EAGER)
     @JoinColumn(name = "componente_id")

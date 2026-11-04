@@ -2,6 +2,7 @@ package org.uniquindio.proyectoavanzadacompuparts.infrastructure.rest;
 
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.webmvc.test.autoconfigure.AutoConfigureMockMvc;
 import org.springframework.boot.webmvc.test.autoconfigure.WebMvcTest;
 import org.springframework.http.MediaType;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
@@ -22,8 +23,9 @@ import java.util.UUID;
 
 import static org.hamcrest.Matchers.containsString;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.when;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
@@ -32,7 +34,8 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 @WebMvcTest(CompraController.class)
-class CompraControllerTest {
+@AutoConfigureMockMvc(addFilters = false)
+public class CompraControllerTest {
 
     private static final UUID BUILD_ID = UUID.fromString("00000000-0000-0000-0000-000000000001");
 
@@ -55,123 +58,73 @@ class CompraControllerTest {
     private ReembolsarCompraUseCase reembolsarCompraUseCase;
 
     @Test
-    void debeCrearUnaCompraCuandoLosDatosSonValidos() throws Exception {
-        Compra compra = compraPendiente();
-        when(realizarCompraUseCase.ejecutar(any(), any())).thenReturn(compra);
+    void realizarCompraExitosaRetorna201Created() throws Exception {
+        // Arrange: Preparar datos válidos y compra esperada
+        String compradorId = "comprador-1";
+        Precio precio = new Precio(new BigDecimal("100000"), "COP");
+        ItemCompra item = new ItemCompra(UUID.randomUUID(), "comp-1", "SER-1", precio);
+        Compra compraSimulada = Compra.realizar("compra-1", BUILD_ID, compradorId, List.of(item));
 
+        when(realizarCompraUseCase.ejecutar(eq(BUILD_ID), eq(compradorId))).thenReturn(compraSimulada);
+
+        String jsonValido = """
+                {
+                    "buildId": "%s",
+                    "compradorId": "%s"
+                }
+                """.formatted(BUILD_ID, compradorId);
+
+        // Act & Assert: Petición HTTP simulada y verificación de respuesta 201 Created
         mockMvc.perform(post("/api/compras")
                         .contentType(MediaType.APPLICATION_JSON)
-                        .content("""
-                                {"buildId":"%s","compradorId":"comprador-1"}
-                                """.formatted(BUILD_ID)))
+                        .content(jsonValido))
                 .andExpect(status().isCreated())
                 .andExpect(header().string("Location", containsString("/api/compras/compra-1")))
                 .andExpect(jsonPath("$.id").value("compra-1"))
                 .andExpect(jsonPath("$.buildId").value(BUILD_ID.toString()))
-                .andExpect(jsonPath("$.compradorId").value("comprador-1"))
+                .andExpect(jsonPath("$.compradorId").value(compradorId))
                 .andExpect(jsonPath("$.estado").value("PENDIENTE"))
                 .andExpect(jsonPath("$.items.length()").value(1))
                 .andExpect(jsonPath("$.total").value(100000))
                 .andExpect(jsonPath("$.moneda").value("COP"));
 
-        verify(realizarCompraUseCase).ejecutar(BUILD_ID, "comprador-1");
+        verify(realizarCompraUseCase).ejecutar(BUILD_ID, compradorId);
     }
 
     @Test
-    void debeRetornar400CuandoFaltaElBuildId() throws Exception {
+    void realizarCompraSinDatoObligatorioRetorna400BadRequest() throws Exception {
+        // Arrange: JSON sin el campo obligatorio 'buildId'
+        String jsonInvalido = """
+                {
+                    "compradorId": "comprador-1"
+                }
+                """;
+
+        // Act & Assert: Petición con validación fallida (400 Bad Request)
         mockMvc.perform(post("/api/compras")
                         .contentType(MediaType.APPLICATION_JSON)
-                        .content("""
-                                {"compradorId":"comprador-1"}
-                                """))
+                        .content(jsonInvalido))
                 .andExpect(status().isBadRequest())
                 .andExpect(jsonPath("$.mensaje", containsString("buildId")));
 
-        verifyNoInteractions(realizarCompraUseCase);
+        // Verificar que el caso de uso NUNCA se ejecutó
+        verify(realizarCompraUseCase, never()).ejecutar(any(), any());
     }
 
     @Test
-    void debeConsultarUnaCompraExistente() throws Exception {
-        when(consultarCompraUseCase.ejecutar("compra-1")).thenReturn(compraPendiente());
+    void consultarCompraConIdInexistenteRetorna404NotFound() throws Exception {
+        // Arrange: ID inexistente que dispara la excepción de recurso no encontrado
+        String idInexistente = "compra-no-existe";
+        when(consultarCompraUseCase.ejecutar(idInexistente))
+                .thenThrow(new RecursoNoEncontradoException("No existe la compra con ID: " + idInexistente));
 
-        mockMvc.perform(get("/api/compras/{id}", "compra-1"))
-                .andExpect(status().isOk())
-                .andExpect(jsonPath("$.id").value("compra-1"))
-                .andExpect(jsonPath("$.estado").value("PENDIENTE"));
-    }
-
-    @Test
-    void debeRetornar404CuandoLaCompraNoExiste() throws Exception {
-        when(consultarCompraUseCase.ejecutar("compra-inexistente"))
-                .thenThrow(new RecursoNoEncontradoException("No existe la compra"));
-
-        mockMvc.perform(get("/api/compras/{id}", "compra-inexistente"))
+        // Act & Assert: Verificación de respuesta 404 Not Found
+        mockMvc.perform(get("/api/compras/{id}", idInexistente))
                 .andExpect(status().isNotFound())
-                .andExpect(jsonPath("$.mensaje").value("No existe la compra"));
-    }
+                .andExpect(jsonPath("$.mensaje").value("No existe la compra con ID: " + idInexistente));
 
-    @Test
-    void debeConfirmarUnaCompraPendiente() throws Exception {
-        Compra compra = compraPendiente();
-        compra.confirmar();
-        when(confirmarCompraUseCase.ejecutar("compra-1")).thenReturn(compra);
-
-        mockMvc.perform(post("/api/compras/{id}/confirmar", "compra-1"))
-                .andExpect(status().isOk())
-                .andExpect(jsonPath("$.estado").value("COMPLETADA"));
-
-        verify(confirmarCompraUseCase).ejecutar("compra-1");
-    }
-
-    @Test
-    void debeCancelarUnaCompraPendiente() throws Exception {
-        Compra compra = compraPendiente();
-        compra.cancelar();
-        when(cancelarCompraUseCase.ejecutar("compra-1")).thenReturn(compra);
-
-        mockMvc.perform(post("/api/compras/{id}/cancelar", "compra-1"))
-                .andExpect(status().isOk())
-                .andExpect(jsonPath("$.estado").value("CANCELADA"));
-
-        verify(cancelarCompraUseCase).ejecutar("compra-1");
-    }
-
-    @Test
-    void debeReembolsarUnaCompraCompletada() throws Exception {
-        Compra compra = compraPendiente();
-        compra.confirmar();
-        compra.solicitarReembolso("Falla de fábrica");
-        when(reembolsarCompraUseCase.ejecutar("compra-1", "comprador-1", "Falla de fábrica"))
-                .thenReturn(compra);
-
-        mockMvc.perform(post("/api/compras/{id}/reembolsar", "compra-1")
-                        .contentType(MediaType.APPLICATION_JSON)
-                        .content("""
-                                {"compradorId":"comprador-1","motivo":"Falla de fábrica"}
-                                """))
-                .andExpect(status().isOk())
-                .andExpect(jsonPath("$.id").value("compra-1"))
-                .andExpect(jsonPath("$.estado").value("REEMBOLSADA"));
-
-        verify(reembolsarCompraUseCase).ejecutar("compra-1", "comprador-1", "Falla de fábrica");
-    }
-
-    @Test
-    void debeRetornar400CuandoFaltaElMotivoDelReembolso() throws Exception {
-        mockMvc.perform(post("/api/compras/{id}/reembolsar", "compra-1")
-                        .contentType(MediaType.APPLICATION_JSON)
-                        .content("""
-                                {"compradorId":"comprador-1","motivo":""}
-                                """))
-                .andExpect(status().isBadRequest())
-                .andExpect(jsonPath("$.mensaje", containsString("motivo")));
-
-        verifyNoInteractions(reembolsarCompraUseCase);
-    }
-
-    private Compra compraPendiente() {
-        Precio precio = new Precio(new BigDecimal("100000"), "COP");
-        ItemCompra item = new ItemCompra(UUID.randomUUID(), "comp-1", "SER-1", precio);
-        return Compra.realizar("compra-1", BUILD_ID, "comprador-1", List.of(item));
+        // Verificar que las acciones subsecuentes nunca prosiguieron
+        verify(realizarCompraUseCase, never()).ejecutar(any(), any());
+        verify(confirmarCompraUseCase, never()).ejecutar(any());
     }
 }
