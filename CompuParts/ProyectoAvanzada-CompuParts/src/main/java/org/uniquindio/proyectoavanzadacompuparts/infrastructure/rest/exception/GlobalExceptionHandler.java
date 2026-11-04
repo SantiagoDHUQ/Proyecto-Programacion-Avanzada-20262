@@ -43,8 +43,7 @@ public class GlobalExceptionHandler {
         Map<String, Object> cuerpo = Map.of(
                 "timestamp", LocalDateTime.now().toString(),
                 "status", status.value(),
-                "mensaje", mensaje
-        );
+                "mensaje", mensaje);
         return ResponseEntity.status(status).body(cuerpo);
     }
 }
